@@ -1,0 +1,2983 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMG 3.0 — Menu Inicial</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue:      #1a3fa8;
+    --blue-dark: #0f2670;
+    --blue-mid:  #2251c5;
+    --red:       #d42b2b;
+    --red-dark:  #a81a1a;
+    --red-light: #e84040;
+    --white:     #ffffff;
+    --off-white: #f4f6fb;
+    --text-dark: #0d1b4b;
+    --text-mid:  #3a4a7a;
+    --text-light:#7a86a8;
+    --shadow:    rgba(15,38,112,.18);
+    --green:     #109150;
+    --green-light:#16b564;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'Open Sans', sans-serif; background: var(--off-white); color: var(--text-dark); overflow-x: hidden; }
+
+  /* WAVE BG */
+  .wave-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .wave-bg svg { position: absolute; bottom: 0; left: 0; width: 100%; height: auto; min-height: 340px; }
+
+  /* HEADER */
+  header { position: relative; z-index: 10; background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-mid) 60%, var(--blue) 100%); overflow: hidden; }
+  .header-inner { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; padding: 38px 24px 70px; }
+  header::before { content:''; position:absolute; top:-60px; right:-80px; width:280px; height:280px; border-radius:50%; background:rgba(255,255,255,.06); z-index:1; }
+  header::after  { content:''; position:absolute; top:20px; left:-50px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,.04); z-index:1; }
+  .header-stripe { position:absolute; left:0; top:0; bottom:0; width:8px; background:linear-gradient(180deg,var(--red-light),var(--red-dark)); z-index:3; }
+  .logo-row { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+  .logo-icon { width:52px; height:52px; background:var(--white); border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,.2); flex-shrink:0; }
+  .logo-icon svg { width:32px; height:32px; }
+  .logo-text { font-family:'Montserrat',sans-serif; font-weight:900; font-size:32px; letter-spacing:6px; color:var(--white); text-shadow:0 2px 8px rgba(0,0,0,.25); }
+  .logo-text span { color:var(--white); }
+  h1 { font-family:'Montserrat',sans-serif; font-weight:800; font-size:clamp(20px,4vw,30px); color:rgba(255,255,255,.95); text-align:center; letter-spacing:2px; text-transform:uppercase; }
+  .header-sub { margin-top:8px; font-size:13px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.55); }
+  .header-wave { position:absolute; bottom:-2px; left:0; width:100%; line-height:0; z-index:2; }
+
+  /* CSV UPLOAD BAR */
+  .csv-bar { position:relative; z-index:10; background:var(--white); border-bottom:1px solid #dde2f0; padding:0 24px; }
+  .csv-bar-inner { max-width:1160px; margin:0 auto; display:flex; align-items:center; gap:16px; padding:14px 0; flex-wrap:wrap; }
+  .csv-icon-box { width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,var(--green),var(--green-light)); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; box-shadow:0 3px 10px rgba(16,145,80,.3); }
+  .csv-label-group { flex:1; min-width:200px; }
+  .csv-label-group strong { display:block; font-family:'Montserrat',sans-serif; font-weight:700; font-size:13px; color:var(--text-dark); }
+  .csv-label-group span { font-size:11px; color:var(--text-light); font-weight:600; letter-spacing:.5px; }
+  .csv-status { display:flex; align-items:center; gap:8px; font-family:'Montserrat',sans-serif; font-size:12px; font-weight:700; color:var(--text-light); letter-spacing:.5px; transition:color .3s; }
+  .csv-status .dot { width:8px; height:8px; border-radius:50%; background:#c8d0e8; flex-shrink:0; transition:background .3s; }
+  .csv-status.loaded { color:var(--green); }
+  .csv-status.loaded .dot { background:var(--green); box-shadow:0 0 6px rgba(16,145,80,.5); }
+  #csvFileInput { display:none; }
+  .btn-upload { display:inline-flex; align-items:center; gap:8px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--white); background:linear-gradient(135deg,var(--green),#0c7a42); border:none; border-radius:8px; padding:10px 20px; cursor:pointer; white-space:nowrap; box-shadow:0 3px 12px rgba(16,145,80,.35); transition:transform .15s,box-shadow .2s; }
+  .btn-upload:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(16,145,80,.45); }
+  .btn-clear-csv { display:none; align-items:center; gap:6px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--red); background:rgba(212,43,43,.08); border:1px solid rgba(212,43,43,.2); border-radius:8px; padding:9px 16px; cursor:pointer; transition:.2s; }
+  .btn-clear-csv:hover { background:rgba(212,43,43,.15); border-color:var(--red); }
+  .btn-clear-csv.visible { display:inline-flex; }
+
+  /* badge */
+  .card-badge { display:none; position:absolute; top:10px; right:10px; background:linear-gradient(135deg,var(--green),#0c7a42); color:var(--white); font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; border-radius:20px; padding:3px 9px; box-shadow:0 2px 8px rgba(16,145,80,.35); }
+  .card-badge.show { display:block; }
+
+  /* GRID */
+  .grid-wrapper { position:relative; z-index:10; max-width:1160px; margin:0 auto; padding:28px 24px 80px; }
+  .section-label { font-family:'Montserrat',sans-serif; font-size:11px; font-weight:700; letter-spacing:4px; text-transform:uppercase; color:var(--text-light); margin-bottom:24px; display:flex; align-items:center; gap:12px; }
+  .section-label::before,.section-label::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,transparent,#c8d0e8,transparent); }
+  .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:18px; }
+
+  /* SELLER CARD */
+  .seller-card { background:var(--white); border-radius:16px; padding:28px 16px 22px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:10px; box-shadow:0 4px 20px var(--shadow); border:2px solid transparent; transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .22s,border-color .22s; position:relative; overflow:hidden; user-select:none; animation:cardIn .4s ease both; }
+  @keyframes cardIn { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+  .seller-card:nth-child(1){animation-delay:.04s}.seller-card:nth-child(2){animation-delay:.08s}.seller-card:nth-child(3){animation-delay:.12s}.seller-card:nth-child(4){animation-delay:.16s}.seller-card:nth-child(5){animation-delay:.20s}.seller-card:nth-child(6){animation-delay:.24s}.seller-card:nth-child(7){animation-delay:.28s}.seller-card:nth-child(8){animation-delay:.32s}.seller-card:nth-child(9){animation-delay:.36s}.seller-card:nth-child(10){animation-delay:.40s}.seller-card:nth-child(11){animation-delay:.44s}.seller-card:nth-child(12){animation-delay:.48s}.seller-card:nth-child(13){animation-delay:.52s}.seller-card:nth-child(14){animation-delay:.56s}.seller-card:nth-child(15){animation-delay:.60s}.seller-card:nth-child(16){animation-delay:.64s}.seller-card:nth-child(17){animation-delay:.68s}
+  .seller-card::before { content:''; position:absolute; top:0; left:0; right:0; height:5px; background:linear-gradient(90deg,var(--blue),var(--red)); border-radius:16px 16px 0 0; transform:scaleX(0); transform-origin:left; transition:transform .3s ease; }
+  .seller-card:hover { transform:translateY(-6px); box-shadow:0 16px 40px rgba(15,38,112,.22),0 2px 8px rgba(212,43,43,.12); border-color:rgba(26,63,168,.15); }
+  .seller-card:hover::before { transform:scaleX(1); }
+  .avatar { width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,var(--blue-mid),var(--blue-dark)); display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:26px; color:var(--white); box-shadow:0 4px 14px rgba(26,63,168,.35); transition:box-shadow .22s,transform .22s; }
+  .seller-card:hover .avatar { box-shadow:0 6px 20px rgba(26,63,168,.5); transform:scale(1.06); }
+  .seller-name { font-family:'Montserrat',sans-serif; font-weight:800; font-size:15px; letter-spacing:2px; text-transform:uppercase; color:var(--text-dark); text-align:center; }
+  .card-btn { margin-top:4px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--white); background:linear-gradient(135deg,var(--blue-mid),var(--blue-dark)); border:none; border-radius:20px; padding:8px 22px; cursor:pointer; transition:background .2s,transform .15s,box-shadow .2s; box-shadow:0 3px 10px rgba(26,63,168,.3); }
+  .seller-card:hover .card-btn { background:linear-gradient(135deg,var(--red-light),var(--red-dark)); box-shadow:0 4px 14px rgba(212,43,43,.4); transform:scale(1.04); }
+
+  /* MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(10,22,70,.6); backdrop-filter:blur(8px); z-index:200; align-items:center; justify-content:center; padding:24px; }
+  .modal-overlay.active { display:flex; }
+  .modal { background:var(--white); border-radius:20px; width:100%; max-width:400px; overflow:hidden; box-shadow:0 32px 80px rgba(10,22,70,.35); animation:modalIn .28s cubic-bezier(.34,1.36,.64,1); }
+  @keyframes modalIn { from{opacity:0;transform:scale(.88) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
+  .modal-header { background:linear-gradient(135deg,var(--blue-dark) 0%,var(--blue-mid) 100%); padding:32px 28px 52px; position:relative; display:flex; flex-direction:column; align-items:center; gap:10px; overflow:hidden; }
+  .modal-header::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; border-radius:50%; background:rgba(255,255,255,.07); }
+  .modal-header::after  { content:''; position:absolute; bottom:-60px; left:-30px; width:200px; height:200px; border-radius:50%; background:rgba(212,43,43,.12); }
+  .modal-wave { position:absolute; bottom:-1px; left:0; width:100%; line-height:0; z-index:2; }
+  .modal-close { position:absolute; top:12px; right:14px; background:rgba(255,255,255,.15); border:none; color:var(--white); font-size:16px; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:5; transition:background .2s; }
+  .modal-close:hover { background:rgba(255,255,255,.3); }
+  .modal-avatar { width:72px; height:72px; border-radius:50%; background:var(--white); display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:30px; color:var(--blue-dark); box-shadow:0 6px 20px rgba(0,0,0,.2); position:relative; z-index:3; }
+  .modal-name { font-family:'Montserrat',sans-serif; font-weight:800; font-size:22px; letter-spacing:4px; text-transform:uppercase; color:var(--white); position:relative; z-index:3; }
+  .modal-sub { font-size:12px; font-weight:600; letter-spacing:2px; color:rgba(255,255,255,.6); position:relative; z-index:3; }
+  .modal-body { padding:28px; }
+  .input-label { font-family:'Montserrat',sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text-mid); margin-bottom:8px; display:block; }
+  .input-wrap { position:relative; }
+  .input-wrap input { width:100%; background:var(--off-white); border:2px solid #d8ddf0; border-radius:10px; padding:14px 46px 14px 16px; font-family:'Montserrat',sans-serif; font-size:18px; font-weight:700; letter-spacing:5px; color:var(--text-dark); outline:none; transition:border-color .2s,box-shadow .2s; }
+  .input-wrap input:focus { border-color:var(--blue-mid); box-shadow:0 0 0 3px rgba(34,81,197,.12); background:var(--white); }
+  .toggle-vis { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:18px; color:var(--text-light); transition:color .2s; line-height:1; }
+  .toggle-vis:hover { color:var(--blue-mid); }
+  .error-msg { display:none; font-family:'Montserrat',sans-serif; font-size:12px; font-weight:700; letter-spacing:1px; color:var(--red); margin-top:8px; text-align:center; animation:shake .3s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
+  .error-msg.show { display:block; }
+  .btn-primary { margin-top:20px; width:100%; background:linear-gradient(135deg,var(--blue-mid) 0%,var(--blue-dark) 100%); border:none; border-radius:10px; padding:15px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:15px; letter-spacing:3px; text-transform:uppercase; color:var(--white); cursor:pointer; box-shadow:0 6px 20px rgba(26,63,168,.35); transition:transform .15s,box-shadow .2s,background .2s; }
+  .btn-primary:hover { background:linear-gradient(135deg,var(--red-light),var(--red-dark)); box-shadow:0 6px 20px rgba(212,43,43,.4); transform:translateY(-2px); }
+
+  /* DASHBOARD */
+  #dashboard { display:none; position:fixed; inset:0; background:var(--off-white); z-index:300; flex-direction:column; overflow-y:auto; }
+  #dashboard.active { display:flex; }
+  .dash-header { background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid)); position:sticky; top:0; z-index:20; overflow:visible; }
+  .dash-header-inner { display:flex; align-items:center; justify-content:space-between; padding:18px 28px; position:relative; z-index:10; gap:12px; }
+  .dash-header::before { content:''; position:absolute; top:-40px; right:-40px; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,.05); z-index:1; pointer-events:none; }
+  .dash-brand { font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; letter-spacing:5px; color:var(--white); }
+  .dash-brand span { color:var(--white); }
+  .dash-user { display:flex; align-items:center; gap:12px; }
+  .dash-user-avatar { width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.2); border:2px solid rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:16px; color:var(--white); }
+  .dash-user-name { font-family:'Montserrat',sans-serif; font-weight:700; font-size:15px; letter-spacing:2px; color:var(--white); }
+  #logoutBtn { position:relative; z-index:10; display:inline-flex !important; align-items:center; gap:8px; background:var(--white) !important; border:2px solid var(--white) !important; border-radius:8px; padding:10px 22px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; letter-spacing:1px; text-transform:uppercase; color:var(--blue-dark) !important; cursor:pointer; box-shadow:0 3px 12px rgba(0,0,0,.25); flex-shrink:0; }
+  #logoutBtn:hover { background:var(--red-light) !important; border-color:var(--red-light) !important; color:var(--white) !important; }
+  .dash-header-wave { position:relative; bottom:0; left:0; width:100%; line-height:0; z-index:2; margin-top:-2px; }
+  .dash-body { flex:1; padding:28px 24px 60px; max-width:1300px; margin:0 auto; width:100%; }
+
+  /* welcome */
+  .welcome-card { background:var(--white); border-radius:16px; padding:20px 24px; margin-bottom:20px; box-shadow:0 4px 20px var(--shadow); border-left:5px solid var(--blue-mid); display:flex; align-items:center; gap:16px; }
+  .welcome-icon { width:48px; height:48px; background:linear-gradient(135deg,var(--blue-mid),var(--blue-dark)); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; box-shadow:0 4px 14px rgba(26,63,168,.3); }
+  .welcome-card h2 { font-family:'Montserrat',sans-serif; font-weight:800; font-size:18px; color:var(--text-dark); margin-bottom:3px; }
+  .welcome-card h2 em { font-style:normal; color:var(--blue-mid); }
+  .welcome-card p { font-size:12px; color:var(--text-light); font-weight:600; }
+
+  /* stats */
+  .stats-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:14px; margin-bottom:20px; }
+  .stat-card { background:var(--white); border-radius:14px; padding:16px; box-shadow:0 4px 16px var(--shadow); display:flex; align-items:center; gap:12px; }
+  .stat-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .stat-icon.blue  { background:rgba(26,63,168,.1); }
+  .stat-icon.red   { background:rgba(212,43,43,.1); }
+  .stat-icon.green { background:rgba(16,145,80,.1); }
+  .stat-icon.orange{ background:rgba(230,120,0,.1); }
+  .stat-info .stat-value { font-family:'Montserrat',sans-serif; font-weight:800; font-size:18px; color:var(--text-dark); line-height:1; }
+  .stat-info .stat-label { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text-light); margin-top:3px; }
+
+  /* CLIENTS TABLE CARD */
+  .clients-card { background:var(--white); border-radius:16px; overflow:hidden; box-shadow:0 4px 20px var(--shadow); }
+  .clients-card-header { background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid)); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .ch-title { font-family:'Montserrat',sans-serif; font-weight:700; font-size:13px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.85); }
+  .ch-count { background:rgba(255,255,255,.18); border-radius:20px; padding:3px 12px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; color:var(--white); }
+
+  /* toolbar */
+  .table-toolbar { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid #e8ecf8; flex-wrap:wrap; }
+  .search-wrap { position:relative; flex:1; min-width:200px; }
+  .search-wrap input { width:100%; background:var(--off-white); border:1.5px solid #d8ddf0; border-radius:8px; padding:8px 12px 8px 34px; font-family:'Open Sans',sans-serif; font-size:13px; color:var(--text-dark); outline:none; transition:border-color .2s; }
+  .search-wrap input:focus { border-color:var(--blue-mid); background:var(--white); }
+  .search-wrap .si { position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:13px; }
+
+  /* filter chips */
+  .filter-row { display:flex; gap:6px; flex-wrap:wrap; }
+  .filter-chip { font-family:'Montserrat',sans-serif; font-size:11px; font-weight:700; letter-spacing:.5px; padding:5px 12px; border-radius:16px; border:1.5px solid #d8ddf0; background:var(--white); color:var(--text-mid); cursor:pointer; transition:.2s; white-space:nowrap; }
+  .filter-chip:hover { border-color:var(--blue-mid); color:var(--blue-mid); }
+  .filter-chip.active { background:var(--blue-mid); border-color:var(--blue-mid); color:var(--white); }
+
+  /* table */
+  .table-scroll { overflow-x:auto; max-height:520px; overflow-y:auto; }
+  table { width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+  thead { position:sticky; top:0; z-index:20; }
+  thead tr { background:#eef1fb; }
+  thead th { padding:10px 14px; text-align:left; font-family:'Montserrat',sans-serif; font-weight:700; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-mid); border-bottom:2px solid #d8ddf0; white-space:nowrap; background:#eef1fb; }
+  tbody tr { border-bottom:1px solid #eef0f8; transition:background .12s; }
+  tbody tr:nth-child(even) td { background:#fafbff; }
+  tbody tr:hover td { background:#eef3ff; }
+  tbody td { padding:9px 14px; color:var(--text-dark); white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; background:#fff; text-align:center; }
+  tbody td.td-left { text-align:left; }
+  tbody td.dias-contato-cell, tbody td.td-dias-venda { max-width:none; overflow:visible; text-overflow:unset; }
+
+  /* frozen columns (0-3: Cliente, Cluster, UF, Grupo Comercial) */
+  .col-frozen-0 { position:sticky; left:0;    z-index:10; min-width:200px; }
+  .col-frozen-1 { position:sticky; left:200px; z-index:10; min-width:90px;  }
+  .col-frozen-2 { position:sticky; left:290px; z-index:10; min-width:50px;  }
+  .col-frozen-3 { position:sticky; left:340px; z-index:10; min-width:100px; }
+  /* shadow on the last frozen column */
+  .col-frozen-3 { box-shadow: 3px 0 8px -2px rgba(15,38,112,.15); }
+  thead th.col-frozen-0 { z-index:25; background:#eef1fb; }
+  thead th.col-frozen-1 { z-index:25; background:#eef1fb; }
+  thead th.col-frozen-2 { z-index:25; background:#eef1fb; }
+  thead th.col-frozen-3 { z-index:25; background:#eef1fb; }
+  tbody tr:nth-child(even) td.col-frozen-0,
+  tbody tr:nth-child(even) td.col-frozen-1,
+  tbody tr:nth-child(even) td.col-frozen-2,
+  tbody tr:nth-child(even) td.col-frozen-3 { background:#fafbff; }
+  tbody tr:hover td.col-frozen-0,
+  tbody tr:hover td.col-frozen-1,
+  tbody tr:hover td.col-frozen-2,
+  tbody tr:hover td.col-frozen-3 { background:#eef3ff; }
+
+  /* motivo alert highlight */
+  td.motivo-required { background:#fff8e6 !important; border:1.5px solid #f0a500 !important; border-radius:6px; padding:4px 8px !important; min-width:0 !important; height:1px; vertical-align:middle; }
+  td.motivo-required > div { height:100%; display:flex; align-items:center; }
+  .motivo-alert-wrap { display:inline-flex; align-items:center; gap:6px; width:100%; }
+  .motivo-badge {
+    display:inline-flex; align-items:center; gap:4px; flex-shrink:0;
+    font-family:'Montserrat',sans-serif; font-weight:700;
+    font-size:10px; letter-spacing:.5px; text-transform:uppercase;
+    background:#f0a500; color:#fff; border-radius:5px;
+    padding:4px 8px; white-space:nowrap; line-height:1;
+  }
+
+  /* column-specific styling */
+  td.col-nome { font-family:'Montserrat',sans-serif; font-weight:700; color:var(--blue-mid); min-width:200px; }
+  td.col-cluster span { display:inline-block; padding:2px 10px; border-radius:12px; font-family:'Montserrat',sans-serif; font-weight:700; font-size:11px; }
+  td.col-cluster span.diamante { background:#e8f0ff; color:#1a3fa8; }
+  td.col-cluster span.ouro     { background:#fff8e0; color:#b07800; }
+  td.col-cluster span.prata    { background:#f0f0f0; color:#555; }
+  td.col-cluster span.demais   { background:#f5f5f5; color:#888; }
+  td.col-fat { font-family:'Montserrat',sans-serif; font-weight:700; color:var(--green); }
+  td.col-meta { font-family:'Montserrat',sans-serif; font-weight:700; color:var(--text-mid); }
+  td.col-sim  { color:var(--green); font-weight:700; }
+  td.col-nao  { color:var(--red);   font-weight:700; }
+
+  /* pagination */
+  .table-footer { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-top:1px solid #eef0f8; flex-wrap:wrap; gap:8px; }
+  .page-info { font-size:12px; font-weight:600; color:var(--text-light); }
+  .page-btns { display:flex; gap:5px; flex-wrap:wrap; }
+  .page-btn { min-width:30px; height:30px; padding:0 6px; border-radius:7px; border:1.5px solid #d8ddf0; background:var(--white); font-family:'Montserrat',sans-serif; font-weight:700; font-size:12px; color:var(--text-mid); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.15s; }
+  .page-btn:hover { border-color:var(--blue-mid); color:var(--blue-mid); }
+  .page-btn.active { background:var(--blue-mid); border-color:var(--blue-mid); color:var(--white); }
+  .page-btn:disabled { opacity:.3; cursor:not-allowed; }
+
+  /* dropdown select nas células editáveis */
+  td.col-select { padding:4px 8px !important; }
+  td.col-select select {
+    appearance: none; -webkit-appearance: none;
+    width: 100%; min-width: 80px;
+    padding: 5px 28px 5px 10px;
+    font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 12px;
+    border-radius: 6px; border: 1.5px solid #d8ddf0;
+    background-color: #f4f6fb;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a86a8'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+    cursor: pointer; outline: none;
+    transition: border-color .2s, background-color .2s;
+    color: var(--text-dark);
+  }
+  td.col-select select:focus { border-color: var(--blue-mid); background-color: #fff; }
+  td.col-select select.val-sim { background-color:#edfaf3; border-color:#16b564; color:#0c7a42; }
+  td.col-select select.val-nao { background-color:#fff0f0; border-color:#e84040; color:#a81a1a; }
+  td.col-venda-auto { font-family:'Montserrat',sans-serif; font-weight:700; font-size:12px; padding:6px 14px !important; }
+  td.col-venda-auto.sim { color: var(--green); }
+  td.col-venda-auto.nao { color: var(--text-light); }
+
+  /* botões SIM/NÃO para Em Contato */
+  .contato-btns { display:inline-flex; gap:4px; align-items:center; }
+  .btn-contato {
+    font-family:'Montserrat',sans-serif; font-weight:700; font-size:10px;
+    letter-spacing:.5px; text-transform:uppercase;
+    border:1.5px solid #d8ddf0; border-radius:5px;
+    padding:4px 9px; cursor:pointer; transition:.15s; background:#f4f6fb; color:#7a86a8;
+  }
+  .btn-contato.sim-active { background:#edfaf3; border-color:#16b564; color:#0c7a42; }
+  .btn-contato.nao-active { background:#fff0f0; border-color:#e84040; color:#a81a1a; }
+  .btn-contato:not(.sim-active):not(.nao-active):hover { background:#eef1fb; border-color:#2251c5; color:#2251c5; }
+  .dias-contato-cell { font-family:'Montserrat',sans-serif; font-weight:700; font-size:12px; color:var(--blue-mid); white-space:nowrap; }
+
+  /* WhatsApp button */
+  .btn-wpp {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #25d366; border: none; border-radius: 6px;
+    padding: 5px 10px; cursor: pointer;
+    font-family: 'Montserrat', sans-serif; font-weight: 700;
+    font-size: 11px; color: #fff; white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(37,211,102,.35);
+    transition: background .2s, transform .15s;
+  }
+  .btn-wpp:hover { background: #1da851; transform: translateY(-1px); }
+  .btn-wpp:active { transform: translateY(0); }
+  .btn-wpp svg { width:13px; height:13px; flex-shrink:0; }
+  .btn-wpp-disabled {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #eef0f8; border: 1.5px solid #d8ddf0; border-radius: 6px;
+    padding: 5px 10px; cursor: default;
+    font-family: 'Montserrat', sans-serif; font-weight: 600;
+    font-size: 11px; color: #b0b8cc; white-space: nowrap;
+  }
+
+  /* empty */
+  .empty-state { padding:50px 24px; text-align:center; }
+  .empty-state .es-icon { font-size:42px; margin-bottom:12px; }
+  .empty-state strong { display:block; font-family:'Montserrat',sans-serif; font-weight:800; font-size:16px; color:var(--text-dark); margin-bottom:6px; }
+  .empty-state p { font-size:13px; color:var(--text-light); font-weight:600; }
+
+  /* botão exportar CSV */
+  .btn-export {
+    position: absolute;
+    top: 20px; right: 28px;
+    z-index: 10;
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 6px;
+    padding: 7px 13px;
+    font-family: 'Montserrat', sans-serif; font-weight: 600;
+    font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    color: rgba(255,255,255,.45); cursor: pointer;
+    transition: background .2s, border-color .2s, color .2s, transform .15s;
+    white-space: nowrap;
+  }
+  .btn-export:hover {
+    background: rgba(255,255,255,.15);
+    border-color: rgba(255,255,255,.4);
+    color: rgba(255,255,255,.75);
+    transform: translateY(-1px);
+  }
+  .btn-export:active { transform: translateY(0); }
+  .btn-export .exp-icon { font-size: 12px; }
+
+  footer { position:relative; z-index:10; background:linear-gradient(135deg,var(--blue-dark),var(--red-dark)); padding:16px 24px; text-align:center; font-family:'Montserrat',sans-serif; font-size:11px; font-weight:600; letter-spacing:2px; color:rgba(255,255,255,.5); text-transform:uppercase; }
+
+  @media(max-width:580px){
+    .cards-grid{grid-template-columns:repeat(2,1fr);}
+    .welcome-card{flex-direction:column;text-align:center;}
+    .dash-user-name{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wave-bg">
+  <svg viewBox="0 0 1440 340" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,340 L0,200 Q200,80 400,160 Q600,240 720,120 Q840,0 1040,100 Q1240,200 1440,80 L1440,340 Z" fill="#1a3fa8" opacity=".18"/>
+    <path d="M0,340 L0,260 Q300,140 560,220 Q820,300 1000,180 Q1180,60 1440,160 L1440,340 Z" fill="#d42b2b" opacity=".1"/>
+  </svg>
+</div>
+
+<!-- MAIN PANEL -->
+<div id="mainPanel">
+  <header>
+    <div class="header-stripe"></div>
+    <div class="header-inner">
+      <div class="logo-row">
+        <div class="logo-icon">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="18" width="6" height="11" rx="2" fill="#1a3fa8"/>
+            <rect x="13" y="11" width="6" height="18" rx="2" fill="#d42b2b"/>
+            <rect x="23" y="4" width="6" height="25" rx="2" fill="#1a3fa8"/>
+          </svg>
+        </div>
+        <div class="logo-text">PMG <span>3.0</span></div>
+      </div>
+      <h1>Menu Inicial</h1>
+    </div>
+    <div class="header-wave">
+      <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0,60 L0,30 Q360,0 720,30 Q1080,60 1440,20 L1440,60 Z" fill="#f4f6fb"/>
+      </svg>
+    </div>
+  </header>
+
+  <input type="file" id="csvFileInput"   accept=".csv" style="display:none;">
+  <input type="file" id="csvDiarioInput" accept=".csv" style="display:none;">
+  <!--__PMG_PRELOAD_SLOT__-->
+
+  <div class="grid-wrapper" id="__adminBlock__">
+    <!-- Instrução -->
+    <p style="text-align:center;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:600;color:var(--text-mid);margin-bottom:28px;line-height:1.7;">
+      Importe o CSV base, o Venda Diária e clique em <strong>💾 Salvar Painel</strong> para distribuir aos vendedores
+    </p>
+
+    <!-- Botões de ação centralizados -->
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-bottom:12px;">
+
+      <button id="btnImportCSV" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--blue-mid),var(--blue-dark));border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(26,63,168,.3);transition:transform .15s,box-shadow .2s;">
+        <span style="font-size:16px;">⬆</span> Importar CSV
+      </button>
+
+      <button id="btnImportDiario" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#2271c5,#0f4a90);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(26,63,168,.3);transition:transform .15s,box-shadow .2s;">
+        <span style="font-size:16px;">📈</span> Venda Diária
+      </button>
+
+      <button id="btnImportSheets" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#0f9d58,#0b7a44);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(15,157,88,.3);transition:transform .15s,box-shadow .2s;">
+        <span style="font-size:16px;">📊</span> Importar G.Sheets
+      </button>
+
+      <button id="btnImport3Ult" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#7b2ff7,#5a0fc8);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(123,47,247,.3);transition:transform .15s,box-shadow .2s;">
+        <span style="font-size:16px;">🛒</span> CSV 3 Últ.
+      </button>
+
+      <button id="btnImportCadastro" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#0a7eb4,#055a82);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(10,126,180,.3);transition:transform .15s,box-shadow .2s;">
+        <span style="font-size:16px;">👤</span> Cadastro
+      </button>
+
+      <button id="btnSavePainel" title="Selecione este mesmo arquivo HTML base para gerar a versão com os dados embutidos" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--blue-mid),var(--blue-dark));border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(26,63,168,.3);transition:transform .15s,box-shadow .2s;">
+        <span style="font-size:16px;">💾</span> Salvar Painel
+      </button>
+
+      <button id="btnLimparCache" title="Apaga todos os dados salvos no localStorage (Dias Contato, Carteira, Observações etc)" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#b84040,#8a1c1c);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(180,40,40,.3);transition:transform .15s,box-shadow .2s;">
+        <span style="font-size:16px;">🗑</span> Limpar Cache
+      </button>
+
+    </div>
+
+    <!-- Área de colar JSON (aparece apenas quando file://) -->
+    <div id="sheetsJsonArea" style="display:none;margin:0 auto 8px;max-width:600px;text-align:center;">
+      <p style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;color:var(--text-mid);margin-bottom:6px;">
+        Cole o JSON copiado da aba aberta e clique em <strong>Aplicar</strong>:
+      </p>
+      <div style="display:flex;gap:8px;">
+        <textarea id="sheetsJsonInput" rows="3" placeholder='{"status":"ok","vendedores":{...}}'
+          style="flex:1;font-family:monospace;font-size:11px;border:1.5px solid #d8ddf0;border-radius:6px;padding:8px;resize:vertical;"></textarea>
+        <button onclick="applySheetsJson()" style="background:linear-gradient(135deg,#0f9d58,#0b7a44);border:none;border-radius:6px;padding:8px 16px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:11px;color:#fff;cursor:pointer;">
+          Aplicar
+        </button>
+      </div>
+    </div>
+
+    <!-- Status dos painéis carregados -->
+    <div id="painelStatus" style="margin-top:16px;text-align:center;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:var(--text-light);min-height:20px;"></div>
+    <input type="file" id="inputCarregarPaineis" accept=".json" multiple style="display:none;">
+  </div>
+  <footer>PMG 3.0 &nbsp;·&nbsp; Sistema de Gestão de Clientes</footer>
+</div>
+
+<!-- MODAL INSIGHT -->
+<div id="insightOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,20,60,.55);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:16px;max-width:740px;width:100%;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(10,20,60,.25);">
+    <div style="background:linear-gradient(135deg,#f0a500,#c47d00);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:14px;letter-spacing:1px;color:#fff;text-transform:uppercase;" id="insightTitle">Sugestão Inteligente</div>
+        <div style="font-family:'Montserrat',sans-serif;font-size:11px;color:rgba(255,255,255,.8);margin-top:2px;" id="insightSubtitle"></div>
+      </div>
+      <button onclick="closeInsight()" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <div id="insightBody" style="overflow-y:auto;padding:16px;flex:1;font-family:'Montserrat',sans-serif;"></div>
+  </div>
+</div>
+
+<!-- MODAL ÚLTIMAS COMPRAS -->
+<div id="ultComprasOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,20,60,.55);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:16px;max-width:720px;width:100%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(10,20,60,.25);">
+    <div style="background:linear-gradient(135deg,#7b2ff7,#5a0fc8);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:14px;letter-spacing:1px;color:#fff;text-transform:uppercase;" id="ultComprasTitle">Últimas Compras</div>
+        <div style="font-family:'Montserrat',sans-serif;font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;" id="ultComprasSubtitle"></div>
+      </div>
+      <button onclick="closeUltCompras()" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <div id="ultComprasBody" style="overflow-y:auto;padding:16px;flex:1;font-family:'Montserrat',sans-serif;"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div class="modal-avatar" id="modalAvatar"></div>
+      <div class="modal-name"   id="modalName"></div>
+      <div class="modal-sub">Autenticação necessária</div>
+      <div class="modal-wave">
+        <svg viewBox="0 0 400 40" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0,40 L0,20 Q100,0 200,20 Q300,40 400,10 L400,40 Z" fill="#ffffff"/>
+        </svg>
+      </div>
+    </div>
+    <div class="modal-body">
+      <label class="input-label" for="passwordInput">Senha de Acesso</label>
+      <div class="input-wrap">
+        <input type="password" id="passwordInput" placeholder="••••••••" autocomplete="off" maxlength="30">
+        <button class="toggle-vis" id="toggleVis">👁</button>
+      </div>
+      <div class="error-msg" id="errorMsg">⚠ Senha incorreta. Tente novamente.</div>
+      <button class="btn-primary" id="confirmBtn">ACESSAR MEU PAINEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="dash-header">
+    <div class="dash-header-inner">
+      <button id="logoutBtn" style="display:inline-flex;align-items:center;gap:8px;background:#ffffff;border:2px solid #ffffff;border-radius:8px;padding:9px 20px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#0f2670;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.2);">⬅ Voltar</button>
+      <div class="dash-user">
+        <div class="dash-user-avatar" id="dashAvatar"></div>
+        <div class="dash-user-name"   id="dashName"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <button id="btnVendedorSalvar" style="display:inline-flex;align-items:center;gap:8px;background:rgba(16,145,80,.8);border:1.5px solid rgba(255,255,255,.4);border-radius:8px;padding:9px 18px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;transition:.2s;" title="Enviar dados para o Google Sheets">
+          💾 Salvar
+        </button>
+        <div id="lastSaveLabel" style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:600;color:rgba(255,255,255,.6);text-align:right;min-height:14px;"></div>
+        <button id="btnDashImportSheets" style="display:none;" title="Importar preenchimentos do Google Sheets">
+          📊 Importar G.Sheets
+        </button>
+      </div>
+    </div>
+    <div class="dash-header-wave">
+      <svg viewBox="0 0 1440 50" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0,50 L0,25 Q360,0 720,25 Q1080,50 1440,15 L1440,50 Z" fill="#f4f6fb"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="dash-body">
+
+    <!-- Banner de aviso de cache restaurado -->
+    <div id="cacheWarningBanner" style="display:none;margin:16px 24px 0;padding:12px 18px;background:#fff8e1;border:1.5px solid #f0a500;border-radius:10px;display:none;align-items:center;gap:12px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#7a5200;">
+      <span style="font-size:18px;">⚠️</span>
+      <span style="flex:1;">Dados locais restaurados do cache anterior (Dias Contato, Carteira etc). Se isso não for esperado, limpe o cache.</span>
+      <button onclick="limparCacheVendedor()" style="background:#d42b2b;border:none;border-radius:7px;padding:7px 14px;color:#fff;font-family:'Montserrat',sans-serif;font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap;">🗑 Limpar Cache</button>
+    </div>
+
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="clients-card">
+      <div class="clients-card-header">
+        <span class="ch-title">Carteira de Clientes</span>
+        <span class="ch-count" id="dashClientCount">0 clientes</span>
+      </div>
+      <div id="tableArea"></div>
+    </div>
+  </div>
+  <footer>PMG 3.0 &nbsp;·&nbsp; Sistema de Gestão de Clientes</footer>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// SELLERS CONFIG — mapeamento nome CSV → sistema
+// ─────────────────────────────────────────────
+const sellers = [
+  { name:"ADRIANO",  csvName:"CARLOS ADRIANO LEPERES",  password:"ADRIANO3"   },
+  { name:"ALEX",     csvName:"ALEX ANDREI GASTALDI",     password:"ALEX115"    },
+  { name:"AUGUSTO",  csvName:"AUGUSTO CESAR",            password:"AUGUSTO83"  },
+  { name:"BRUNO",    csvName:"BRUNO BENICIO SILVA",      password:"BRUNO114"   },
+  { name:"DEBORAH",  csvName:"DEBORAH MARTINS",          password:"DEBORAH43"  },
+  { name:"DENIS",    csvName:"DENIS APARECIDO",          password:"DENIS9"     },
+  { name:"DOUGLAS",  csvName:"DOUGLAS ALMEIDA",          password:"DOUGLAS32"  },
+  { name:"JOYCE",    csvName:"JOYCE SILVA DE OLIVEIRA",  password:"JOYCE47"    },
+  { name:"LEANDRO",  csvName:"LEANDRO OLIVEIRA",         password:"LEANDRO7"   },
+  { name:"LUCAS",    csvName:"LUCAS CUSTODIO",           password:"LUCAS13"    },
+  { name:"MARCELO",  csvName:"MARCELO OLIVEIRA",         password:"MARCELO28"  },
+  { name:"MATHEUS",  csvName:"MATHEUS BRITO",            password:"MATHEUS14"  },
+  { name:"NOA",      csvName:"NOADIA MARTINS",           password:"NOA40"      },
+  { name:"RAFAEL",   csvName:"RAFAEL OLIVEIRA LOPES",    password:"RAFAEL50"   },
+  { name:"ROSANE",   csvName:"ROSANE SANTOS",            password:"ROSANE117"  },
+  { name:"THAIS",    csvName:"THAIS NEPOMUCENO",         password:"THAIS112"   },
+  { name:"WESLEY",   csvName:"WESLEY BRITO",             password:"WESLEY23"   },
+];
+
+const sellersDev = [
+  { name:"ALINE",   csvName:"ALINE CRISTINA",   password:"ALINE175"  },
+  { name:"CINTIA",  csvName:"CINTIA  NOBRE",    password:"CINTIA169" },
+  { name:"KEULLY",  csvName:"KEULLY BIANCA",    password:"KEULLY154" },
+];
+
+// Lista completa para processamento de CSV/dados
+const allSellers = [...sellers, ...sellersDev];
+
+// Colunas a exibir na tabela (legíveis)
+const DISPLAY_COLS = [
+  { key:'NOME_GC',           label:'Cliente'         },
+  { key:'CLUSTER',           label:'Cluster'         },
+  { key:'ESTADO',            label:'UF'              },
+  { key:'GRUPO_  COMERCIAL', label:'Grupo Comercial' },
+  { key:'CONTATO',           label:'Contato'         },
+  { key:'TELEFONE',          label:'WhatsApp'        },
+  { key:'DT_ULT_COMPRA',    label:'Dias s/ Venda'   },
+  { key:'CARTEIRA',          label:'Carteira'        },
+  { key:'EM CONTATO',        label:'Em Contato'      },
+  { key:'DIAS_CONTATO',      label:'Dias Contato'    },
+  { key:'VENDA',             label:'Venda'           },
+  { key:'NÃO VENDA',         label:'Não Venda'       },
+  { key:'MOTIVO (NÃO VENDA)',label:'Motivo Não Venda'},
+  { key:'OBSERVAÇÕES (PREENCHIMENTO LIVRE)', label:'Observações' },
+  { key:'META FAT',          label:'Meta Fat.'       },
+  { key:'FATURAMENTO',       label:'Fat. Mês'        },
+  { key:'DIAS_VENDA',        label:'Dias Venda'      },
+  { key:'FREQUENCIA',        label:'Frequência'      },
+  { key:'POSITIVAÇÃO',       label:'Posit. Mês'      },
+  { key:'CREDITO_ALLIANZ',   label:'Crédito'         },
+  { key:'% FAT_HAVA',        label:'% Hava'          },
+  { key:'% FAT_HAVA_FEM',    label:'% Hava Fem'      },
+  { key:'% FAT_HAVA_  MASC', label:'% Hava Masc'     },
+  { key:'% FAT_HAVA_UNIS',   label:'% Hava Unis'     },
+  { key:'% FAT_HAVA_INF',    label:'% Hava Inf'      },
+  { key:'% FAT_  BEIRA',     label:'% Beira'         },
+  { key:'% FAT_  GREND',     label:'% Grend'         },
+];
+
+// Global CSV store
+let ultComprasData = (typeof window.__PMG_3ULT__      !== 'undefined') ? window.__PMG_3ULT__      : {};
+let cadastroData   = (typeof window.__PMG_CADASTRO__  !== 'undefined') ? window.__PMG_CADASTRO__  : {}; // codGC → {tel, email, contato}
+// Carrega dados pré-embutidos pelo Salvar Painel, se existirem
+let csvData = (typeof window.__PMG_DATA__ !== 'undefined') ? window.__PMG_DATA__ : {};
+let sellerMeta      = (typeof window.__PMG_META__  !== 'undefined') ? window.__PMG_META__  : {};
+let sellerMetaPosit = (typeof window.__PMG_METAP__ !== 'undefined') ? window.__PMG_METAP__ : {};
+
+let csvFileName = '';
+
+// ─────────────────────────────────────────────
+// BUILD GRID
+// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// MODO PAINEL — transforma a tela em runtime
+// quando o arquivo foi gerado pelo Salvar Painel
+// ─────────────────────────────────────────────
+function buildSellersGrid() {
+  const grid = document.getElementById('sellersGrid');
+  if (!grid) return false;
+  grid.innerHTML = '';
+
+  const buildSection = (list) => {
+    list.forEach(s => {
+      const card = document.createElement('div');
+      card.className = 'seller-card';
+      card.id = 'card-' + s.name;
+      card.innerHTML = `
+        <div class="avatar">${s.name[0]}</div>
+        <div class="seller-name">${s.name}</div>
+        <button class="card-btn">ACESSAR</button>
+      `;
+      card.addEventListener('click', () => openModal(s));
+      grid.appendChild(card);
+    });
+  };
+
+  // Seção Farmer
+  const labelFarmer = document.createElement('p');
+  labelFarmer.className = 'section-label';
+  labelFarmer.textContent = 'Farmer';
+  grid.appendChild(labelFarmer);
+  const gridFarmer = document.createElement('div');
+  gridFarmer.className = 'cards-grid';
+  grid.appendChild(gridFarmer);
+  sellers.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'seller-card';
+    card.id = 'card-' + s.name;
+    card.innerHTML = `<div class="avatar">${s.name[0]}</div><div class="seller-name">${s.name}</div><button class="card-btn">ACESSAR</button>`;
+    card.addEventListener('click', () => openModal(s));
+    gridFarmer.appendChild(card);
+  });
+
+  // Seção Developer
+  const labelDev = document.createElement('p');
+  labelDev.className = 'section-label';
+  labelDev.style.marginTop = '32px';
+  labelDev.textContent = 'Developer';
+  grid.appendChild(labelDev);
+  const gridDev = document.createElement('div');
+  gridDev.className = 'cards-grid';
+  grid.appendChild(gridDev);
+  sellersDev.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'seller-card';
+    card.id = 'card-' + s.name;
+    card.innerHTML = `<div class="avatar">${s.name[0]}</div><div class="seller-name">${s.name}</div><button class="card-btn">ACESSAR</button>`;
+    card.addEventListener('click', () => openModal(s));
+    gridDev.appendChild(card);
+  });
+
+  return true;
+}
+
+function activatePainelMode() {
+  // 1. Muda título
+  const h1 = document.querySelector('h1');
+  if (h1) h1.textContent = 'Painel de Vendedores';
+
+  // 2. Substitui o bloco admin pelo grid de vendedores
+  const adminBlock = document.getElementById('__adminBlock__');
+  if (adminBlock) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'grid-wrapper';
+    wrapper.innerHTML = `
+      <div id="sellersGrid"></div>
+      <div id="painelStatus" style="margin-top:12px;text-align:center;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:var(--text-light);min-height:20px;"></div>
+    `;
+    adminBlock.replaceWith(wrapper);
+  }
+
+  // 3. Popula o grid
+  buildSellersGrid();
+
+  // 4. Atualiza botões de status
+  const b1 = document.getElementById('btnImportCSV');
+  const b2 = document.getElementById('btnImportDiario');
+  if (b1) { b1.innerHTML = `<span style="font-size:16px;">✅</span> Base ${window.__PMG_DATE__ || ''}`; b1.style.background = 'linear-gradient(135deg,#109150,#0c7a44)'; }
+  if (b2) { b2.innerHTML = `<span style="font-size:16px;">✅</span> Diário ${window.__PMG_DATE__ || ''}`; b2.style.background = 'linear-gradient(135deg,#109150,#0c7a44)'; }
+  // Ajusta botão G.Sheets se file://
+  const b3 = document.getElementById('btnImportSheets');
+  if (b3 && (location.protocol === 'file:' || location.origin === 'null')) {
+    b3.style.opacity = '0.5';
+    b3.style.cursor  = 'not-allowed';
+    b3.title = 'Disponível apenas no Painel hospedado no Netlify';
+  }
+}
+
+// (activatePainelMode é chamado ao final do script)
+
+// ─────────────────────────────────────────────
+// CSV UPLOAD & PARSE
+// ─────────────────────────────────────────────
+document.getElementById('btnImportDiario').addEventListener('click', () => {
+  document.getElementById('csvDiarioInput').click();
+});
+
+// ── CSV 3 ÚLTIMAS COMPRAS ──────────────────────────────────
+document.getElementById('btnImport3Ult').addEventListener('click', () => {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.csv,.txt';
+  inp.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => parse3Ult(ev.target.result, file.name);
+    reader.readAsText(file, 'ISO-8859-1');
+  };
+  inp.click();
+});
+
+function parse3Ult(text, fileName) {
+  // Detecta separador (tab ou ponto-e-vírgula)
+  const firstLine = text.split('\n')[0];
+  const delim = firstLine.includes('\t') ? '\t' : ';';
+  const lines  = text.split('\n').map(l => l.replace(/\r/g,'').trim()).filter(l => l);
+  if (lines.length < 2) { alert('CSV 3 Últ. vazio ou inválido.'); return; }
+
+  const headers = lines[0].split(delim).map(h => h.trim().toUpperCase());
+  const iGC        = headers.indexOf('GRUPO_COMERCIAL');
+  const iOrdem     = headers.indexOf('ORDEM_COMPRA_RECORTE');
+  const iData      = headers.indexOf('DATA_COMPRA');
+  const iGrade     = headers.indexOf('GRADE');
+  const iDesc      = headers.indexOf('DESC_PRODUTO');
+  const iQtd       = headers.indexOf('QUANTIDADE');
+  const iQtdDatas  = headers.indexOf('QTD_DATAS_PEDIDO');
+  const iInativo   = headers.indexOf('TEMPO_INATIVO_DIAS');
+  const iMedio     = headers.indexOf('TEMPO_MEDIO_ENTRE_PEDIDOS_DIAS');
+  const iUltData   = headers.indexOf('ULTIMO_PEDIDO_DATA');
+
+  if (iGC < 0 || iOrdem < 0) { alert('Colunas GRUPO_COMERCIAL ou ORDEM_COMPRA_RECORTE não encontradas.'); return; }
+
+  ultComprasData = {};
+  for (let i = 1; i < lines.length; i++) {
+    const cols  = lines[i].split(delim);
+    const gc    = (cols[iGC]||'').trim();
+    const gcNum = parseFloat(gc.replace(',','.'));
+    const codGC = isNaN(gcNum) ? gc.replace(/^0+/,'') : String(Math.round(gcNum));
+    if (!codGC) continue;
+
+    if (!ultComprasData[codGC]) ultComprasData[codGC] = [];
+    ultComprasData[codGC].push({
+      ordem       : (cols[iOrdem]||'').trim(),
+      data        : iData     >= 0 ? (cols[iData]||'').trim()     : '',
+      grade       : iGrade    >= 0 ? (cols[iGrade]||'').trim()    : '',
+      desc        : iDesc     >= 0 ? (cols[iDesc]||'').trim()     : '',
+      qtd         : iQtd      >= 0 ? (cols[iQtd]||'').trim()      : '',
+      qtdDatas    : iQtdDatas >= 0 ? (cols[iQtdDatas]||'0').trim(): '0',
+      tempoInativo: iInativo  >= 0 ? (cols[iInativo]||'0').trim() : '0',
+      tempoMedio  : iMedio    >= 0 ? (cols[iMedio]||'0').trim()   : '0',
+      ultData     : iUltData  >= 0 ? (cols[iUltData]||'').trim()  : '',
+    });
+  }
+
+  // Aplica DT_ULT_COMPRA nas linhas do csvData
+  allSellers.forEach(s => {
+    (csvData[s.csvName] || []).forEach(row => {
+      const g = (row['GRUPO_  COMERCIAL']||'').trim();
+      const n = parseFloat(g.replace(',','.'));
+      const codGC = isNaN(n) ? g.replace(/^0+/,'') : String(Math.round(n));
+      const entries = ultComprasData[codGC];
+      if (entries && entries.length > 0) {
+        row['DT_ULT_COMPRA'] = entries[0].ultData || '';
+      }
+    });
+  });
+
+  const total = Object.keys(ultComprasData).length;
+  const btn3  = document.getElementById('btnImport3Ult');
+  btn3.style.background = 'rgba(123,47,247,.4)';
+  btn3.style.boxShadow  = 'none';
+  btn3.innerHTML = `<span style="font-size:16px;">✅</span> ${total} grupos`;
+
+  // Recarrega painel ativo se houver
+  if (activeSeller) openDashboard(activeSeller);
+  const sg = document.getElementById('sellersGrid');
+  if (sg) buildSellersGrid();
+}
+
+function openUltCompras(codGC, nomeCliente, btnEl) {
+  const compras = ultComprasData[codGC];
+  if (!compras || compras.length === 0) return;
+
+  document.getElementById('ultComprasTitle').textContent = nomeCliente || codGC;
+  document.getElementById('ultComprasSubtitle').textContent = `Grupo Comercial: ${codGC}`;
+
+  // Agrupa por ordem
+  const ordens = {};
+  compras.forEach(c => {
+    if (!ordens[c.ordem]) ordens[c.ordem] = { data: c.data, itens: [] };
+    ordens[c.ordem].itens.push(c);
+  });
+
+  const ordemPriority = { 'ÚLTIMA COMPRA': 1, 'PENÚLTIMA COMPRA': 2, 'ANTEPENÚLTIMA COMPRA': 3 };
+  const ordenadas = Object.entries(ordens).sort((a,b) => (ordemPriority[a[0]]||9) - (ordemPriority[b[0]]||9));
+
+  const fmtQtd = v => {
+    const n = parseFloat(String(v||'0').replace(',','.'));
+    return isNaN(n) ? '—' : Math.round(n).toLocaleString('pt-BR');
+  };
+
+  let html = '';
+  ordenadas.forEach(([ordem, info]) => {
+    const badge = ordem === 'ÚLTIMA COMPRA' ? '#0c7a42' : ordem === 'PENÚLTIMA COMPRA' ? '#2251c5' : '#7b2ff7';
+    // Ordena itens por qtd decrescente
+    const itensOrdenados = [...info.itens].sort((a,b) => {
+      const na = parseFloat(String(a.qtd||'0').replace(',','.')); 
+      const nb = parseFloat(String(b.qtd||'0').replace(',','.'));
+      return nb - na;
+    });
+    // Qtd total do pedido
+    const qtdTotal = itensOrdenados.reduce((s,it) => s + (parseFloat(String(it.qtd||'0').replace(',','.')) || 0), 0);
+
+    html += `<div style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+        <span style="background:${badge};color:#fff;font-family:'Montserrat',sans-serif;font-weight:700;font-size:10px;letter-spacing:1px;padding:3px 10px;border-radius:12px;text-transform:uppercase;">${ordem}</span>
+        <span style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#555;">${info.data}</span>
+        <span style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:#2251c5;background:#eef3ff;padding:2px 8px;border-radius:8px;">Total: ${fmtQtd(qtdTotal)} pares</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-family:'Montserrat',sans-serif;font-size:12px;">
+        <thead>
+          <tr style="background:#f4f6fb;">
+            <th style="padding:7px 10px;text-align:left;font-weight:700;color:#3a4a7a;border-bottom:2px solid #e0e4f0;">Descrição</th>
+            <th style="padding:7px 10px;text-align:center;font-weight:700;color:#3a4a7a;border-bottom:2px solid #e0e4f0;">Grade</th>
+            <th style="padding:7px 10px;text-align:center;font-weight:700;color:#3a4a7a;border-bottom:2px solid #e0e4f0;">Qtd</th>
+          </tr>
+        </thead>
+        <tbody>`;
+    itensOrdenados.forEach((it, idx) => {
+      const bg = idx % 2 === 0 ? '#fff' : '#fafbff';
+      html += `<tr style="background:${bg};">
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;color:#222;text-align:left;">${it.desc || '—'}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:center;color:#555;">${it.grade || '—'}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:center;font-weight:700;color:#2251c5;">${fmtQtd(it.qtd)}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+
+  document.getElementById('ultComprasBody').innerHTML = html;
+  const overlay = document.getElementById('ultComprasOverlay');
+  overlay.style.display = 'flex';
+}
+
+function closeInsight() {
+  document.getElementById('insightOverlay').style.display = 'none';
+}
+document.getElementById('insightOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('insightOverlay')) closeInsight();
+});
+
+function openInsight(codGC, nomeCliente) {
+  const compras = ultComprasData[codGC];
+  if (!compras || compras.length === 0) return;
+
+  document.getElementById('insightTitle').textContent = nomeCliente || codGC;
+  document.getElementById('insightSubtitle').textContent = `Grupo Comercial: ${codGC} · Análise de compras`;
+
+  const first   = compras[0];
+  const med     = parseFloat(first.tempoMedio   || 0);
+  const ina     = parseFloat(first.tempoInativo || 0);
+  const ultData = first.ultData || '';
+  const fator   = med < 8 ? 2.5 : med <= 18 ? 2.0 : med <= 45 ? 1.7 : 1.3;
+
+  // ── 1. PRÓXIMA COMPRA ────────────────────────────────────
+  let proximaHtml = '';
+  if (med > 0 && ultData) {
+    let dtUlt;
+    if (ultData.includes('/')) {
+      const p = ultData.split('/');
+      dtUlt = new Date(+p[2], +p[1]-1, +p[0]);
+    } else { dtUlt = new Date(ultData); }
+
+    const pad = n => String(n).padStart(2,'0');
+    const fmtDate = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+
+    const dtIdeal = new Date(dtUlt.getTime() + med * 86400000);
+    const dtAlerta= new Date(dtUlt.getTime() + med * fator * 86400000);
+    const hoje    = new Date();
+    const diasRestantes = Math.round((dtIdeal.getTime() - hoje.getTime()) / 86400000);
+
+    const statusTxt = diasRestantes > 0
+      ? `<span style="color:#0c7a42;font-weight:700;">Em ${diasRestantes} dias (${fmtDate(dtIdeal)})</span>`
+      : diasRestantes > -Math.round(med * (fator-1))
+        ? `<span style="color:#f0a500;font-weight:700;">Dentro da janela (desde ${fmtDate(dtIdeal)})</span>`
+        : `<span style="color:#d42b2b;font-weight:700;">ATRASADO ${Math.abs(diasRestantes)} dias</span>`;
+
+    proximaHtml = `
+      <div style="background:#fffbf0;border:1.5px solid #f0a500;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+        <div style="font-weight:800;font-size:12px;letter-spacing:1px;color:#c47d00;text-transform:uppercase;margin-bottom:10px;">📅 Próxima Compra</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px;">
+          <div><div style="color:#888;font-size:10px;font-weight:700;text-transform:uppercase;">Última Compra</div><div style="font-weight:700;margin-top:3px;">${ultData}</div></div>
+          <div><div style="color:#888;font-size:10px;font-weight:700;text-transform:uppercase;">Ciclo Médio</div><div style="font-weight:700;margin-top:3px;">${Math.round(med)} dias</div></div>
+          <div><div style="color:#888;font-size:10px;font-weight:700;text-transform:uppercase;">Período Ideal</div><div style="font-weight:700;margin-top:3px;">${fmtDate(dtIdeal)}</div></div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;"><span style="color:#888;font-size:10px;font-weight:700;text-transform:uppercase;">Status: </span>${statusTxt}</div>
+        <div style="margin-top:6px;font-size:11px;color:#888;">Alerta de prioridade a partir de: <strong>${fmtDate(dtAlerta)}</strong> (fator ${fator}×)</div>
+      </div>`;
+  }
+
+  // ── 2. SUGESTÃO DE PRODUTOS DO CLIENTE ──────────────────
+  const prodMap = {};
+  compras.forEach(c => {
+    if (!c.desc || !c.desc.trim()) return;
+    const k = c.desc.trim();
+    if (!prodMap[k]) prodMap[k] = 0;
+    prodMap[k] += parseFloat(String(c.qtd||'0').replace(',','.')) || 0;
+  });
+  const prodsSorted = Object.entries(prodMap)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, 10);
+
+  let sugestaoHtml = '';
+  if (prodsSorted.length > 0) {
+    const maxQtd = prodsSorted[0][1];
+    const rows = prodsSorted.map(([desc, qtd], i) => {
+      const pct = Math.round((qtd / maxQtd) * 100);
+      const bg  = i % 2 === 0 ? '#fff' : '#fafbff';
+      return `<tr style="background:${bg};">
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:left;color:#222;font-size:12px;">${desc}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:center;font-weight:700;color:#2251c5;font-size:12px;">${Math.round(qtd)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;width:100px;">
+          <div style="background:#e8ecf8;border-radius:4px;height:8px;overflow:hidden;">
+            <div style="background:#2251c5;height:100%;width:${pct}%;border-radius:4px;"></div>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+    sugestaoHtml = `
+      <div style="margin-bottom:16px;">
+        <div style="font-weight:800;font-size:12px;letter-spacing:1px;color:#2251c5;text-transform:uppercase;margin-bottom:8px;">🛍 Sugestão — Histórico do Cliente</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="background:#f4f6fb;">
+            <th style="padding:7px 10px;text-align:left;font-weight:700;color:#3a4a7a;font-size:11px;border-bottom:2px solid #e0e4f0;">Produto</th>
+            <th style="padding:7px 10px;text-align:center;font-weight:700;color:#3a4a7a;font-size:11px;border-bottom:2px solid #e0e4f0;">Qtd Total</th>
+            <th style="padding:7px 10px;border-bottom:2px solid #e0e4f0;"></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── 3. SUGESTÃO DE PRODUTOS COMPLEMENTARES (outros clientes) ──
+  // Encontra todos os pedidos que contêm pelo menos um produto do cliente
+  const clienteProds = new Set(Object.keys(prodMap));
+  const compProdMap  = {};
+
+  Object.entries(ultComprasData).forEach(([gc2, itens]) => {
+    if (gc2 === codGC) return;
+    // Agrupa itens por ordem para ver quais aparecem no mesmo pedido
+    const ordens2 = {};
+    itens.forEach(it => {
+      if (!it.ordem || !it.desc) return;
+      if (!ordens2[it.ordem]) ordens2[it.ordem] = [];
+      ordens2[it.ordem].push(it.desc.trim());
+    });
+    Object.values(ordens2).forEach(descs => {
+      const hasClienteProd = descs.some(d => clienteProds.has(d));
+      if (!hasClienteProd) return;
+      descs.forEach(d => {
+        if (clienteProds.has(d)) return; // já é produto do cliente
+        compProdMap[d] = (compProdMap[d] || 0) + 1;
+      });
+    });
+  });
+
+  const compSorted = Object.entries(compProdMap)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, 8);
+
+  let compHtml = '';
+  if (compSorted.length > 0) {
+    const maxFreq = compSorted[0][1];
+    const compRows = compSorted.map(([desc, freq], i) => {
+      const pct = Math.round((freq / maxFreq) * 100);
+      const bg  = i % 2 === 0 ? '#fff' : '#fafbff';
+      return `<tr style="background:${bg};">
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:left;color:#222;font-size:12px;">${desc}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:center;font-weight:700;color:#0c7a42;font-size:12px;">${freq} pedidos</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;width:100px;">
+          <div style="background:#e8f5ee;border-radius:4px;height:8px;overflow:hidden;">
+            <div style="background:#0c7a42;height:100%;width:${pct}%;border-radius:4px;"></div>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+    compHtml = `
+      <div style="margin-bottom:16px;">
+        <div style="font-weight:800;font-size:12px;letter-spacing:1px;color:#0c7a42;text-transform:uppercase;margin-bottom:6px;">🤝 Sugestão — Produtos Complementares</div>
+        <div style="font-size:11px;color:#888;margin-bottom:8px;">Produtos frequentemente comprados junto com os itens deste cliente por outros clientes.</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="background:#f4f6fb;">
+            <th style="padding:7px 10px;text-align:left;font-weight:700;color:#3a4a7a;font-size:11px;border-bottom:2px solid #e0e4f0;">Produto</th>
+            <th style="padding:7px 10px;text-align:center;font-weight:700;color:#3a4a7a;font-size:11px;border-bottom:2px solid #e0e4f0;">Frequência</th>
+            <th style="padding:7px 10px;border-bottom:2px solid #e0e4f0;"></th>
+          </tr></thead>
+          <tbody>${compRows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  document.getElementById('insightBody').innerHTML = proximaHtml + sugestaoHtml + compHtml;
+  document.getElementById('insightOverlay').style.display = 'flex';
+}
+
+function closeUltCompras() {
+  document.getElementById('ultComprasOverlay').style.display = 'none';
+}
+document.getElementById('ultComprasOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('ultComprasOverlay')) closeUltCompras();
+});
+
+// ── CADASTRO ──────────────────────────────────────────────
+document.getElementById('btnImportCadastro').addEventListener('click', () => {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.csv,.txt';
+  inp.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => parseCadastro(ev.target.result);
+    reader.readAsText(file, 'ISO-8859-1');
+  };
+  inp.click();
+});
+
+function parseCadastro(text) {
+  const firstLine = text.split('\n')[0];
+  const delim = firstLine.includes('\t') ? '\t' : firstLine.includes(';') ? ';' : ',';
+  const lines = text.split('\n').map(l => l.replace(/\r/g,'').trim()).filter(l => l);
+  if (lines.length < 2) { alert('CSV Cadastro vazio ou inválido.'); return; }
+
+  const headers = lines[0].split(delim).map(h => h.trim().toUpperCase());
+  const iGC      = headers.indexOf('GC');
+  const iTel     = headers.indexOf('TEL');
+  const iEmail   = headers.indexOf('EMAIL');
+  const iContato = headers.indexOf('CONTATO');
+  const iUltCom  = headers.indexOf('ULTCOM');
+
+  if (iGC < 0) { alert('Coluna GC não encontrada no CSV Cadastro.'); return; }
+
+  cadastroData = {};
+  for (let i = 1; i < lines.length; i++) {
+    const cols   = lines[i].split(delim);
+    const gcRaw  = (cols[iGC]||'').trim();
+    const gcNum  = parseFloat(gcRaw.replace(',','.'));
+    const codGC  = isNaN(gcNum) ? gcRaw.replace(/^0+/,'') : String(Math.round(gcNum));
+    if (!codGC) continue;
+
+    const tel     = iTel     >= 0 ? (cols[iTel]    ||'').trim() : '';
+    const email   = iEmail   >= 0 ? (cols[iEmail]  ||'').trim() : '';
+    const contato = iContato >= 0 ? (cols[iContato]||'').trim() : '';
+    const ultcom  = iUltCom  >= 0 ? (cols[iUltCom] ||'').trim() : '';
+
+    // Se já existe e tem ULTCOM mais recente, só substitui se a nova for mais recente
+    if (cadastroData[codGC]) {
+      const existDt = _parseDataBR(cadastroData[codGC].ultcom);
+      const newDt   = _parseDataBR(ultcom);
+      if (newDt && existDt && newDt <= existDt) continue;
+    }
+    cadastroData[codGC] = { tel, email, contato, ultcom };
+    if (codGC === '56524') console.log('[D] cadastro stored 56524: gcRaw='+gcRaw+' codGC='+codGC+' tel='+tel+' contato='+contato);
+  }
+
+  // Aplica nas linhas existentes do csvData
+  _applyCadastroToCsvData();
+
+  const total = Object.keys(cadastroData).length;
+  const btn   = document.getElementById('btnImportCadastro');
+  if (total === 0) {
+    btn.style.background = 'rgba(212,43,43,.4)';
+    btn.style.boxShadow  = 'none';
+    btn.innerHTML = `<span style="font-size:16px;">⚠</span> 0 registros`;
+  } else {
+    btn.style.background = 'rgba(10,126,180,.4)';
+    btn.style.boxShadow  = 'none';
+    btn.innerHTML = `<span style="font-size:16px;">✅</span> ${total} grupos`;
+  }
+  if (activeSeller) openDashboard(activeSeller);
+  const sg = document.getElementById('sellersGrid');
+  if (sg) buildSellersGrid();
+}
+
+function _parseDataBR(s) {
+  if (!s) return null;
+  if (s.includes('/')) {
+    const p = s.split('/');
+    if (p.length === 3) return new Date(+p[2], +p[1]-1, +p[0]);
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function _applyCadastroToCsvData() {
+  allSellers.forEach(s => {
+    (csvData[s.csvName] || []).forEach(row => {
+      const g = (row['GRUPO_  COMERCIAL']||'').trim();
+      const n = parseFloat(g.replace(',','.'));
+      const codGC = isNaN(n) ? g.replace(/^0+/,'') : String(Math.round(n));
+      if (codGC === '56524') console.log('[D] 56524 found in csvData seller='+s.name+' codGC='+codGC+' cadastroEntry=', cadastroData[codGC]);
+      const entry = cadastroData[codGC];
+      if (!entry) return;
+      if (entry.tel)     row['TELEFONE'] = entry.tel;
+      if (entry.contato) row['CONTATO']  = entry.contato;
+      if (codGC === '56524') console.log('[D] 56524 applied: TEL='+row['TELEFONE']+' CONTATO='+row['CONTATO']);
+    });
+  });
+  // Debug: check cadastroData for 56524
+  console.log('[D] cadastroData[56524]=', cadastroData['56524']);
+}
+
+document.getElementById('csvDiarioInput').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => parseDiario(ev.target.result, file.name);
+  reader.readAsText(file, 'ISO-8859-1');
+  this.value = '';
+});
+
+function parseDiario(text, fileName) {
+  const delim = text.split('\n')[0].includes(';') ? ';' : ',';
+  const lines = text.split('\n').map(l => l.replace(/\r/g,'').trim()).filter(l => l);
+  if (lines.length < 2) { alert('CSV Diário vazio ou inválido.'); return; }
+
+  const headers = splitLine(lines[0], delim).map(h => h.trim().toUpperCase());
+  const iCodGC      = headers.indexOf('COD_GC');
+  const iVendedor   = headers.indexOf('NOME_VENDEDOR');
+  const iFat        = headers.indexOf('FATURAMENTO');
+  const iCodCliLoja = headers.indexOf('COD_CLIENTE_LOJA');
+  const iDataFat    = headers.indexOf('DATA_FAT');
+  const iNomeCli    = headers.indexOf('NOME_CLIENTE');
+
+  const iFatPos = headers.indexOf('FAT>0');
+
+  if (iCodGC < 0 || iFat < 0) {
+    alert('Colunas COD_GC ou FATURAMENTO não encontradas no CSV Diário.');
+    return;
+  }
+
+  // Agrupa por vendedor → codGC
+  const diarioMap = {};
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols    = splitLine(lines[i], delim);
+    // Normaliza COD_GC: remove zeros à esquerda e decimais (.0)
+    const codRaw  = (cols[iCodGC] || '').trim();
+    const codNum  = parseFloat(codRaw.replace(',','.'));
+    const codGC   = !isNaN(codNum) ? String(Math.round(codNum)) : codRaw.replace(/^0+/, '') || codRaw;
+    const vendRaw   = (cols[iVendedor] || '').trim().replace(/\s+/g,' ').toUpperCase();
+    const fat     = parseFloat((cols[iFat] || '0').replace(',','.')) || 0;
+    const fatPos  = iFatPos >= 0 ? (cols[iFatPos]||'').trim() : (fat > 0 ? '1' : '0');
+    // Processa se FAT>0=1 OU faturamento > 0
+    if (fatPos !== '1' && fat <= 0) continue;
+    const codCliLoja= (cols[iCodCliLoja]  || '').trim();
+    const dataFat   = (cols[iDataFat]     || '').trim();
+
+    const seller = allSellers.find(s => s.csvName.trim().replace(/\s+/g,' ').toUpperCase() === vendRaw)
+                || allSellers.find(s => { const p = s.csvName.trim().replace(/\s+/g,' ').toUpperCase().split(' ').filter(Boolean); return p.length >= 2 && vendRaw.includes(p[0]) && vendRaw.includes(p[p.length-1]); });
+    if (!seller || !codGC) continue;
+
+    const key = seller.csvName;
+    if (!diarioMap[key])         diarioMap[key] = {};
+    if (!diarioMap[key][codGC])  diarioMap[key][codGC] = { fat:0, clientesLoja: new Set(), dias: new Set(), nomeCliente: '' };
+
+    diarioMap[key][codGC].fat += fat;
+    // Positivação: conta COD_CLIENTE_LOJA distintos com FAT>0=1
+    if (codCliLoja && fatPos === '1') diarioMap[key][codGC].clientesLoja.add(codCliLoja);
+    // Dias de venda: só quando há faturamento real
+    if (fat > 0 && dataFat.length >= 8) {
+      const dia = String(parseInt(dataFat.slice(6, 8), 10));
+      diarioMap[key][codGC].dias.add(dia);
+    }
+    // Captura nome do cliente (pega o primeiro valor não vazio encontrado)
+    if (iNomeCli >= 0 && !diarioMap[key][codGC].nomeCliente) {
+      const nome = (cols[iNomeCli] || '').trim();
+      if (nome) diarioMap[key][codGC].nomeCliente = nome;
+    }
+  }
+
+  // Aplica nas linhas de csvData e detecta novos clientes
+  let updated = 0;
+  let added   = 0;
+  allSellers.forEach(s => {
+    if (!csvData[s.csvName]) csvData[s.csvName] = [];
+    const rows = csvData[s.csvName];
+    const map  = diarioMap[s.csvName] || {};
+
+    // Monta set de codGCs já existentes (para referência rápida)
+    const existingCods = new Set();
+    rows.forEach(row => {
+      const grpRaw = (row['GRUPO_  COMERCIAL'] || '').trim();
+      const grpN   = parseFloat(grpRaw.replace(',','.'));
+      const cod    = isNaN(grpN) ? grpRaw : String(Math.round(grpN));
+      existingCods.add(cod);
+    });
+
+    // Atualiza linhas existentes
+    rows.forEach(row => {
+      const grpRaw = (row['GRUPO_  COMERCIAL'] || '').trim();
+      const grpN   = parseFloat(grpRaw.replace(',','.'));
+      const codGC  = isNaN(grpN) ? grpRaw : String(Math.round(grpN));
+      const d = map[codGC]
+             || map[codGC.padStart(6,'0')]
+             || map[codGC.padStart(7,'0')];
+      if (d) {
+        row['FATURAMENTO'] = d.fat.toFixed(2).replace('.',',');
+        row['POSITIVAÇÃO'] = String(d.clientesLoja.size);
+        const diasOrdenados = [...d.dias].map(Number).sort((a,b) => a-b).join(';');
+        row['DIAS_VENDA']  = diasOrdenados;
+        row['FREQUENCIA']  = String(d.dias.size);
+        // DIAS_CONTATO: NÃO atualizar clientes do CSV base — só para novos do diário
+        // (preenchido pelo vendedor manualmente via botão HOJE)
+        updated++;
+      } else {
+        row['FATURAMENTO'] = '0';
+        row['POSITIVAÇÃO'] = '0';
+        row['DIAS_VENDA']  = '';
+        row['FREQUENCIA']  = '0';
+      }
+    });
+
+    // Detecta codGCs novos (estão no diário mas não no painel) e adiciona no fim
+    Object.keys(map).forEach(codGC => {
+      const jaExiste = rows.some(row => {
+        const g = (row['GRUPO_  COMERCIAL']||'').trim();
+        const n = parseFloat(g.replace(',','.'));
+        const c = isNaN(n) ? g : String(Math.round(n));
+        return c === codGC || c === codGC.replace(/^0+/,'') || codGC === c.padStart(6,'0') || codGC === c.padStart(7,'0');
+      });
+      if (jaExiste) return;
+      const d = map[codGC];
+      const diasOrdenados = [...d.dias].map(Number).sort((a,b) => a-b).join(';');
+      const newRow = {};
+      DISPLAY_COLS.forEach(col => { newRow[col.key] = ''; });
+      // Preenche os campos disponíveis do diário
+      newRow['GRUPO_  COMERCIAL'] = codGC;
+      newRow['NOME_GC']           = d.nomeCliente || '';
+      newRow['FATURAMENTO']       = d.fat.toFixed(2).replace('.',',');
+      newRow['POSITIVAÇÃO']       = String(d.clientesLoja.size);
+      newRow['DIAS_VENDA']        = diasOrdenados;
+      newRow['FREQUENCIA']        = String(d.dias.size);
+      newRow['CARTEIRA']          = 'SIM';
+      newRow['CLUSTER']           = 'DEMAIS';
+      newRow['DIAS_CONTATO']      = diasOrdenados;
+      newRow['EM CONTATO']        = diasOrdenados ? 'SIM' : '';
+      newRow['_fromDiario']       = true;
+      csvData[s.csvName].push(newRow);
+      added++;
+    });
+  });
+
+  // Feedback no botão
+  const btn = document.getElementById('btnImportDiario');
+  btn.style.background = 'rgba(26,63,168,.5)';
+  btn.innerHTML = `<span class="exp-icon">✅</span> ${updated} atual. ${added>0?'· +'+added+' novo(s)':''}`;
+  setTimeout(() => {
+    btn.style.background = '';
+    btn.innerHTML = `<span class="exp-icon">📈</span> Venda Diária`;
+  }, 5000);
+  // Aplica cadastro nas novas linhas _fromDiario se já foi importado
+  if (Object.keys(cadastroData).length > 0) _applyCadastroToCsvData();
+}
+
+document.getElementById('btnImportCSV').addEventListener('click', () => {
+  document.getElementById('csvFileInput').click();
+});
+
+document.getElementById('csvFileInput').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  csvFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = ev => parseCSV(ev.target.result);
+  // Try UTF-8 first, fallback to latin-1 via readAsBinaryString
+  reader.readAsText(file, 'ISO-8859-1');
+  this.value = '';
+});
+
+function parseCSV(text) {
+  const delim = text.split('\n')[0].includes(';') ? ';' : ',';
+  const lines = text.split('\n').map(l => l.replace(/\r/g,'').trim()).filter(l => l);
+  if (lines.length < 2) { alert('CSV vazio ou inválido.'); return; }
+
+  const headers = splitLine(lines[0], delim);
+
+  // Reset
+  csvData         = {};
+  sellerMeta      = {};
+  sellerMetaPosit = {};
+  allSellers.forEach(s => { csvData[s.csvName] = []; });
+  
+
+  let totalMatched = 0;
+  for (let i = 1; i < lines.length; i++) {
+    const cols  = splitLine(lines[i], delim);
+    const obj   = {};
+    headers.forEach((h, idx) => { obj[h.trim()] = (cols[idx] || '').trim(); });
+    const vendCell = (obj['VENDEDOR'] || '').trim().replace(/\s+/g,' ').toUpperCase();
+    const matched = allSellers.find(s => s.csvName.trim().replace(/\s+/g,' ').toUpperCase() === vendCell);
+    if (matched) {
+      // FAT. MÊS e POSIT. MÊS vêm do CSV Diário — sempre inicializa zerado
+      obj['FATURAMENTO'] = '0';
+      obj['POSITIVAÇÃO'] = '0';
+      obj['DIAS_VENDA']  = '';
+      obj['FREQUENCIA']  = '0';
+      // CARTEIRA nasce como SIM por padrão
+      if (!obj['CARTEIRA'] || obj['CARTEIRA'].trim() === '') obj['CARTEIRA'] = 'SIM';
+      // Captura META FAT e META POSIT por vendedor — SOMA todos os valores
+      const metaKey = Object.keys(obj).find(k => k.toUpperCase().includes('META') && k.toUpperCase().includes('FAT'));
+      if (metaKey) {
+        const metaStr = (obj[metaKey]||'0').replace(',','.').replace(/[^0-9.]/g,'');
+        const metaVal = parseFloat(metaStr) || 0;
+        if (metaVal > 0) {
+          sellerMeta[matched.csvName] = (sellerMeta[matched.csvName] || 0) + metaVal;
+        }
+      }
+      const metaPKey = Object.keys(obj).find(k => k.toUpperCase() === 'META POSIT');
+      if (metaPKey) {
+        const metaPStr = (obj[metaPKey]||'0').replace(',','.').replace(/[^0-9.]/g,'');
+        const metaPVal = parseFloat(metaPStr) || 0;
+        if (metaPVal > 0) {
+          sellerMetaPosit[matched.csvName] = (sellerMetaPosit[matched.csvName] || 0) + metaPVal;
+        }
+      }
+      csvData[matched.csvName].push(obj);
+      totalMatched++;
+    }
+  }
+
+  // Update UI — feedback visual no botão de importar
+  const btnImp = document.getElementById('btnImportCSV');
+  btnImp.style.background = 'rgba(16,145,80,.5)';
+  btnImp.innerHTML = `<span class="exp-icon">✅</span> ${totalMatched} registros`;
+  setTimeout(() => {
+    btnImp.style.background = '';
+    btnImp.innerHTML = `<span class="exp-icon">⬆</span> Importar CSV`;
+  }, 4000);
+
+  allSellers.forEach(s => {
+    csvData[s.csvName] = csvData[s.csvName] || [];
+  });
+  // Aplica cadastro se já foi importado
+  if (Object.keys(cadastroData).length > 0) _applyCadastroToCsvData();
+}
+
+function splitLine(line, delim) {
+  const res = []; let cur = ''; let inQ = false;
+  for (let c of line) {
+    if (c === '"') { inQ = !inQ; continue; }
+    if (c === delim && !inQ) { res.push(cur); cur = ''; continue; }
+    cur += c;
+  }
+  res.push(cur);
+  return res;
+}
+
+// ─────────────────────────────────────────────
+// MODAL / AUTH
+// ─────────────────────────────────────────────
+let currentSeller = null;
+const overlay    = document.getElementById('modalOverlay');
+const pwdInput   = document.getElementById('passwordInput');
+const errorMsg   = document.getElementById('errorMsg');
+const toggleVis  = document.getElementById('toggleVis');
+
+function openModal(s) {
+  currentSeller = s;
+  document.getElementById('modalAvatar').textContent = s.name[0];
+  document.getElementById('modalName').textContent   = s.name;
+  pwdInput.value = ''; errorMsg.classList.remove('show');
+  overlay.classList.add('active');
+  setTimeout(() => pwdInput.focus(), 120);
+}
+function closeModal() { overlay.classList.remove('active'); currentSeller = null; }
+
+function attemptLogin() {
+  if (!currentSeller) return;
+  if (pwdInput.value.trim() === currentSeller.password) {
+    const seller = currentSeller;   // salva referência ANTES de closeModal zerar currentSeller
+    closeModal();
+    openDashboard(seller);
+  } else {
+    errorMsg.classList.remove('show'); void errorMsg.offsetWidth;
+    errorMsg.classList.add('show'); pwdInput.value = ''; pwdInput.focus();
+  }
+}
+document.getElementById('modalClose').addEventListener('click', closeModal);
+overlay.addEventListener('click', e => { if (e.target===overlay) closeModal(); });
+document.getElementById('confirmBtn').addEventListener('click', attemptLogin);
+pwdInput.addEventListener('keydown', e => { if (e.key==='Enter') attemptLogin(); });
+toggleVis.addEventListener('click', () => {
+  const show = pwdInput.type === 'password';
+  pwdInput.type = show ? 'text' : 'password';
+  toggleVis.textContent = show ? '🙈' : '👁';
+});
+
+// ─────────────────────────────────────────────
+// DASHBOARD
+// ─────────────────────────────────────────────
+let activeRows    = [];
+let filteredRows  = [];
+let currentPage   = 1;
+let searchTerm    = '';
+let activeFilters = new Set(['TODOS']); // suporta múltiplos filtros simultâneos
+let activeClusters = [];           // ← stored globally so renderTable never needs a param
+const PAGE_SIZE   = 25;
+
+function openDashboard(s) {
+  if (!s) return;
+  activeSeller = s;   // ← registra vendedor ativo para saves
+
+  document.getElementById('dashAvatar').textContent  = s.name[0];
+  document.getElementById('dashName').textContent    = s.name;
+  const welcomeEl = document.getElementById('dashWelcome');
+  if (welcomeEl) welcomeEl.textContent = s.name;
+
+  // Mescla preenchimentos salvos antes de filtrar
+  const hadCache = mergePersistedData(s.csvName);
+  const banner = document.getElementById('cacheWarningBanner');
+  if (banner) banner.style.display = hadCache ? 'flex' : 'none';
+
+  // Apenas linhas com GRUPO COMERCIAL preenchido
+  activeRows = (csvData[s.csvName] || []).filter(r => {
+    const g = (r['GRUPO_  COMERCIAL'] || '').trim();
+    return g !== '' && g !== '0' && !isNaN(parseFloat(g)) ? true : (g !== '');
+  });
+
+  // Corrige campos automáticos
+  activeRows.forEach(r => {
+    const fat = parseFloat(String(r['FATURAMENTO'] || '0').replace(',', '.')) || 0;
+    r['VENDA'] = fat > 0 ? 'SIM' : 'NÃO';
+    if (fat > 0 && r['CARTEIRA'] !== 'NÃO') r['CARTEIRA'] = 'SIM';
+    const posit = parseInt(r['POSITIVAÇÃO'] || '0', 10);
+    r['POSITIVAÇÃO'] = isNaN(posit) ? '0' : String(posit);
+    // Garante CLUSTER=DEMAIS para linhas sem cluster
+    if (!r['CLUSTER'] || r['CLUSTER'].trim() === '') r['CLUSTER'] = 'DEMAIS';
+    // Limpa DIAS_CONTATO que possa ter sido salvo como data
+    if (r['DIAS_CONTATO']) r['DIAS_CONTATO'] = _cleanDias(r['DIAS_CONTATO']);
+  });
+
+  // Ordena: CARTEIRA=NÃO vai para o final, demais por FAT. MÊS decrescente
+  activeRows.sort((a, b) => {
+    const aNao = (a['CARTEIRA'] || '').toUpperCase() === 'NÃO';
+    const bNao = (b['CARTEIRA'] || '').toUpperCase() === 'NÃO';
+    if (aNao && !bNao) return 1;
+    if (!aNao && bNao) return -1;
+    const fa = parseFloat(String(a['FATURAMENTO'] || '0').replace(',', '.')) || 0;
+    const fb = parseFloat(String(b['FATURAMENTO'] || '0').replace(',', '.')) || 0;
+    return fb - fa;
+  });
+
+  filteredRows   = [...activeRows];
+  currentPage    = 1;
+  searchTerm     = '';
+  activeFilters  = new Set(['TODOS']);
+  activeClusters = [...new Set(activeRows.map(r => r['CLUSTER']).filter(Boolean))];
+
+
+  renderStats(activeRows);
+  renderTable();
+  document.getElementById('dashboard').classList.add('active');
+  // Restaura último salvamento do localStorage
+  const lbl = document.getElementById('lastSaveLabel');
+  if (lbl) {
+    const ts = localStorage.getItem('pmg_lastSave_' + s.name);
+    lbl.textContent = ts ? `Último envio: ${ts}` : '';
+  }
+  window.scrollTo(0, 0);
+}
+
+// ─────────────────────────────────────────────
+// RENDER STATS — atualiza cartões com qualquer conjunto de linhas
+// ─────────────────────────────────────────────
+function renderStats(rows) {
+  const carteiraSim  = rows.filter(r => (r['CARTEIRA']||'').toUpperCase()==='SIM').length;
+  const vendas       = rows.filter(r => (r['VENDA']||'').toUpperCase()==='SIM').length;
+  const naoVenda     = rows.filter(r => (r['NÃO VENDA']||'').toUpperCase()==='SIM').length;
+  // Positivação = soma da coluna POSITIVAÇÃO (distintos COD_CLIENTE_LOJA por grupo)
+  const positTotal   = rows.reduce((acc,r) => acc + (parseInt(r['POSITIVAÇÃO']||'0',10) || 0), 0);
+
+  // Média contatos diários
+  const todosOsDias = new Set();
+  let somaContatos  = 0;
+  rows.forEach(r => {
+    const dc = (r['DIAS_CONTATO']||'').split(/[;,]/).map(d=>d.trim()).filter(Boolean);
+    dc.forEach(d => todosOsDias.add(d));
+    somaContatos += dc.length;
+  });
+  const mediaContatos = todosOsDias.size > 0 ? (somaContatos / todosOsDias.size).toFixed(1) : '0';
+
+  // Fat. Mês — sem casas decimais
+  const fatTotal  = rows.reduce((acc,r) => acc+(parseFloat(String(r['FATURAMENTO']||'0').replace(',','.')) || 0), 0);
+  // Meta: soma da coluna META FAT das linhas filtradas
+  const metaFiltrada = rows.reduce((acc,r) => acc+(parseFloat(String(r['META FAT']||'0').replace(',','.')) || 0), 0);
+  const metaVendedor = metaFiltrada > 0 ? metaFiltrada : (activeSeller ? (sellerMeta[activeSeller.csvName] || 0) : 0);
+  const pctMeta   = metaVendedor > 0 ? Math.round((fatTotal/metaVendedor)*100) : 0;
+  const fatFmt    = fatTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0});
+  const pctColor  = pctMeta>=100?'#0c7a42':pctMeta>=70?'#f0a500':'#d42b2b';
+
+  // Positivação % meta usando META POSIT das linhas filtradas
+  const metaPositFiltrada  = rows.reduce((acc,r) => acc+(parseFloat(String(r['META POSIT']||'0').replace(',','.')) || 0), 0);
+  const metaPositVendedor  = metaPositFiltrada > 0 ? metaPositFiltrada : (activeSeller ? (sellerMetaPosit[activeSeller.csvName] || 0) : 0);
+  const pctPosit   = metaPositVendedor > 0 ? Math.round((positTotal/metaPositVendedor)*100) : (carteiraSim > 0 ? Math.round((positTotal/carteiraSim)*100) : 0);
+  const pctPositColor = pctPosit>=100?'#0c7a42':pctPosit>=70?'#f0a500':'#d42b2b';
+
+  // Contatos do dia (DIAS_CONTATO contém o dia de hoje)
+  const hoje = new Date().getDate();
+  const contatosHoje = rows.filter(r => {
+    const dias = (r['DIAS_CONTATO']||'').split(/[;,]/).map(d => parseInt(d.trim(),10));
+    return dias.includes(hoje);
+  }).length;
+
+  document.getElementById('dashClientCount').textContent = carteiraSim + ' cliente(s)';
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="stat-icon blue">👥</div><div class="stat-info"><div class="stat-value">${carteiraSim}</div><div class="stat-label">Carteira Clientes</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">💰</div><div class="stat-info">
+      <div class="stat-value" style="font-size:16px;line-height:1.2;">${fatFmt}</div>
+      <div style="font-size:12px;font-weight:700;color:${pctColor};margin-top:2px;">${pctMeta}% da meta</div>
+      <div class="stat-label">Faturamento</div>
+    </div></div>
+    <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info">
+      <div class="stat-value">${positTotal}</div>
+      <div style="font-size:12px;font-weight:700;color:${pctPositColor};margin-top:2px;">${pctPosit}% da carteira</div>
+      <div class="stat-label">Positivação</div>
+    </div></div>
+    <div class="stat-card"><div class="stat-icon orange">📞</div><div class="stat-info"><div class="stat-value">${contatosHoje}</div><div class="stat-label">Contatos do Dia</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">📊</div><div class="stat-info"><div class="stat-value">${mediaContatos}</div><div class="stat-label">Média Contatos/Dia</div></div></div>
+    <div class="stat-card"><div class="stat-icon red">❌</div><div class="stat-info"><div class="stat-value">${naoVenda}</div><div class="stat-label">Não Venda</div></div></div>
+  `;
+}
+
+function renderTable() {
+  const area = document.getElementById('tableArea');
+  if (!area) return;
+
+  if (activeRows.length === 0) {
+    area.innerHTML = `<div class="empty-state"><div class="es-icon">📂</div><strong>NENHUM CLIENTE ENCONTRADO</strong><p>Importe o CSV consolidado no painel inicial para visualizar sua carteira.</p></div>`;
+    return;
+  }
+
+  const isActive = f => activeFilters.has(f);
+
+  // Cluster chips + special filter chips
+  let chips = `<div class="filter-row">
+    <span class="filter-chip ${isActive('TODOS')?'active':''}" data-cluster="TODOS">Todos</span>`;
+  activeClusters.forEach(c => {
+    chips += `<span class="filter-chip ${isActive(c)?'active':''}" data-cluster="${esc(c)}">${esc(c)}</span>`;
+  });
+  chips += `<span class="filter-chip ${isActive('__NAO_VENDA__')?'active':''}" data-cluster="__NAO_VENDA__" style="border-color:#e84040;color:${isActive('__NAO_VENDA__')?'#fff':'#e84040'};">Venda = Não</span>`;
+  chips += `<span class="filter-chip ${isActive('__NAO_VENDA_SIM__')?'active':''}" data-cluster="__NAO_VENDA_SIM__" style="border-color:#d42b2b;color:${isActive('__NAO_VENDA_SIM__')?'#fff':'#d42b2b'};">Não Venda = SIM</span>`;
+  chips += `<span class="filter-chip ${isActive('__EM_CONTATO__')?'active':''}" data-cluster="__EM_CONTATO__" style="border-color:#0f9d58;color:${isActive('__EM_CONTATO__')?'#fff':'#0f9d58'};">Em Contato = Hoje</span>`;
+  if (Object.keys(ultComprasData).length > 0) {
+    chips += `<span class="filter-chip ${isActive('__PRIORIDADE__')?'active':''}" data-cluster="__PRIORIDADE__" style="border-color:#8a94b0;color:${isActive('__PRIORIDADE__')?'#fff':'#8a94b0'};${isActive('__PRIORIDADE__')?'background:#8a94b0;':''}">🔔 Prioridade Contato</span>`;
+  }
+  chips += `</div>`;
+
+  const start    = (currentPage - 1) * PAGE_SIZE;
+  const pageRows = filteredRows.slice(start, start + PAGE_SIZE);
+  const totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
+
+  let html = `
+    <div class="table-toolbar">
+      <div class="search-wrap">
+        <span class="si">🔍</span>
+        <input type="text" id="tblSearch" placeholder="Buscar por nome, estado, grupo..." value="${esc(searchTerm)}">
+      </div>
+      ${chips}
+      <span style="font-size:11px;font-weight:700;color:var(--text-light);white-space:nowrap;">${filteredRows.length} resultado(s)</span>
+    </div>
+    <div class="table-scroll"><table>
+      <thead><tr>`;
+
+  // frozen column keys (first 4 columns)
+  const FROZEN_KEYS = ['NOME_GC','CLUSTER','ESTADO','GRUPO_  COMERCIAL'];
+
+  DISPLAY_COLS.forEach((c, ci) => {
+    const frozenCls = FROZEN_KEYS.includes(c.key) ? ` col-frozen-${FROZEN_KEYS.indexOf(c.key)}` : '';
+    html += `<th class="${frozenCls}">${c.label}</th>`;
+  });
+  html += `</tr></thead><tbody>`;
+
+  if (pageRows.length === 0) {
+    html += `<tr><td colspan="${DISPLAY_COLS.length}" style="text-align:center;padding:28px;color:var(--text-light);">Nenhum resultado encontrado.</td></tr>`;
+  } else {
+    pageRows.forEach((row, pageIdx) => {
+      const realIdx  = (currentPage - 1) * PAGE_SIZE + pageIdx;
+      const isNew       = !!row._isNew && !row._newSaved; // _newSaved = trata como linha normal
+      const isNewSaved  = !!row._isNew && !!row._newSaved;
+      const fromDiario  = !!row._fromDiario;
+      const rowBg = (isNew || isNewSaved) ? 'background:#f0f5ff;' : fromDiario ? 'background:#fff8f0;' : '';
+      // Precisa preencher motivo? NÃO VENDA=SIM e MOTIVO vazio
+      const needMotivo = (row['NÃO VENDA']||'').toUpperCase() === 'SIM'
+                      && !(row['MOTIVO (NÃO VENDA)']||'').trim();
+      html += `<tr style="${rowBg}">`;
+      const carteiraNao = (row['CARTEIRA']||'').toUpperCase() === 'NÃO';
+      const LOCKED_WHEN_CARTEIRA_NAO = ['EM CONTATO','DIAS_CONTATO','VENDA','NÃO VENDA','MOTIVO (NÃO VENDA)','CARTEIRA'];
+      DISPLAY_COLS.forEach(col => {
+        const val        = (row[col.key] || '').trim();
+        const frozenIdx  = FROZEN_KEYS.indexOf(col.key);
+        const frozenCls  = frozenIdx >= 0 ? ` col-frozen-${frozenIdx}` : '';
+        const motivoAlert = needMotivo && col.key === 'MOTIVO (NÃO VENDA)';
+
+        // Se CARTEIRA=NÃO, bloqueia tudo exceto Observações e a própria Carteira
+        if (carteiraNao && col.key !== 'OBSERVAÇÕES (PREENCHIMENTO LIVRE)' && col.key !== 'CARTEIRA' && col.key !== 'NOME_GC' && col.key !== 'CLUSTER' && col.key !== 'ESTADO' && col.key !== 'GRUPO_  COMERCIAL') {
+          const displayVal = val || '—';
+          html += `<td class="${frozenCls}" style="color:#c8d0e8;text-align:center;font-size:11px;">${displayVal}</td>`;
+          return;
+        }
+
+        // ── Colunas somente leitura para novas linhas ──
+        const readOnlyCols = ['FAT 365D','FAT M-1','FAT M-3','FAT M-2','FAT M LY','META FAT','META POSIT','TELEFONE','EMAIL','CONTATO','CREDITO_ALLIANZ','% FAT_HAVA','% FAT_HAVA_FEM','% FAT_HAVA_  MASC','% FAT_HAVA_UNIS','% FAT_HAVA_INF','% FAT_  BEIRA','% FAT_  GREND'];
+        // _fromDiario: FATURAMENTO, POSITIVAÇÃO, DIAS_VENDA, FREQUENCIA têm dados reais — não esconder
+        const readOnlyForNew = ['FATURAMENTO','POSITIVAÇÃO','DIAS_VENDA','FREQUENCIA'];
+        if (isNew && readOnlyForNew.includes(col.key)) {
+          html += `<td class="${frozenCls}" style="color:#c8d0e8;text-align:center;">—</td>`;
+          return;
+        }
+        // Linhas _fromDiario mostram TELEFONE/EMAIL/CONTATO normalmente (vindos do cadastro)
+        const colsBloqDiario = readOnlyCols.filter(c => c !== 'TELEFONE' && c !== 'EMAIL' && c !== 'CONTATO');
+        if (isNew && readOnlyCols.includes(col.key)) {
+          html += `<td class="${frozenCls}" style="color:#c8d0e8;text-align:center;">—</td>`;
+          return;
+        }
+        if (fromDiario && colsBloqDiario.includes(col.key)) {
+          html += `<td class="${frozenCls}" style="color:#c8d0e8;text-align:center;">—</td>`;
+          return;
+        }
+
+        if (col.key === 'NOME_GC') {
+          if (isNew || isNewSaved) {
+            const isSaved = isNewSaved;
+            if (isSaved) {
+              // Linha salva — exibe nome + botão editar
+              html += `<td class="col-nome${frozenCls}" style="padding:4px 4px !important;min-width:200px;display:flex;align-items:center;gap:4px;">
+                <button onclick="deleteNewRow(${realIdx})" title="Excluir"
+                  style="flex-shrink:0;background:none;border:none;cursor:pointer;color:#d42b2b;font-size:15px;padding:2px 4px;border-radius:4px;line-height:1;"
+                  onmouseover="this.style.background='#fff0f0'" onmouseout="this.style.background='none'">🗑</button>
+                <button onclick="editNewRow(${realIdx})" title="Editar"
+                  style="flex-shrink:0;background:rgba(26,63,168,.1);border:none;cursor:pointer;color:#2251c5;font-size:15px;padding:3px 7px;border-radius:4px;line-height:1;"
+                  onmouseover="this.style.background='rgba(26,63,168,.2)'" onmouseout="this.style.background='rgba(26,63,168,.1)'">✏</button>
+                <span style="flex:1;font-weight:700;font-size:12px;color:#2251c5;padding-left:4px;">${esc(val)}</span>
+              </td>`;
+            } else {
+              // Linha em edição — exibe input + botão salvar + lixeira
+              html += `<td class="col-nome${frozenCls}" style="padding:4px 4px !important;min-width:220px;display:flex;align-items:center;gap:4px;">
+                <button onclick="deleteNewRow(${realIdx})" title="Excluir"
+                  style="flex-shrink:0;background:none;border:none;cursor:pointer;color:#d42b2b;font-size:15px;padding:2px 4px;border-radius:4px;line-height:1;"
+                  onmouseover="this.style.background='#fff0f0'" onmouseout="this.style.background='none'">🗑</button>
+                <input type="text"
+                  data-rowidx="${realIdx}" data-col="${esc(col.key)}"
+                  onchange="onSelectChange(this)"
+                  value="${esc(val)}"
+                  placeholder="Nome do cliente"
+                  style="flex:1;min-width:120px;background:#fafbff;border:1.5px solid #d8ddf0;border-radius:6px;padding:6px 8px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;color:#2251c5;outline:none;transition:border-color .2s;"
+                  onfocus="this.style.borderColor='#2251c5';this.style.background='#fff'"
+                  onblur="this.style.borderColor='#d8ddf0';this.style.background='#fafbff'"
+                >
+                <button onclick="saveNewRow(${realIdx})" title="Confirmar cliente"
+                  style="flex-shrink:0;background:rgba(15,157,88,.85);border:none;cursor:pointer;color:#fff;font-size:15px;padding:3px 7px;border-radius:4px;line-height:1;"
+                  onmouseover="this.style.background='rgba(15,157,88,1)'" onmouseout="this.style.background='rgba(15,157,88,.85)'">✓</button>
+              </td>`;
+            }
+          } else {
+            html += `<td class="col-nome td-left${frozenCls}" style="min-width:200px;font-weight:700;font-size:12px;color:#2251c5;">${esc(val)}</td>`;
+          }
+
+        } else if (col.key === 'CLUSTER') {
+          if (isNew) {
+            const clusters = ['DIAMANTE','OURO','PRATA','DEMAIS'];
+            let opts = `<option value=""${!val?'selected':''}></option>`;
+            clusters.forEach(c => { opts += `<option value="${c}"${val.toUpperCase()===c?'selected':''}>${c}</option>`; });
+            html += `<td class="col-select${frozenCls}">
+              <select data-rowidx="${realIdx}" data-col="${esc(col.key)}" onchange="onSelectChange(this)">
+                ${opts}
+              </select>
+            </td>`;
+          } else {
+            const cls = val.toLowerCase();
+            html += `<td class="col-cluster${frozenCls}"><span class="${cls}">${esc(val)}</span></td>`;
+          }
+
+        } else if (col.key === 'ESTADO') {
+          if (isNew) {
+            html += `<td class="${frozenCls}" style="padding:4px 8px !important;">
+              <input type="text"
+                data-rowidx="${realIdx}" data-col="${esc(col.key)}"
+                onchange="onSelectChange(this)"
+                value="${esc(val)}"
+                placeholder="UF"
+                maxlength="2"
+                style="width:48px;text-transform:uppercase;background:#fafbff;border:1.5px solid #d8ddf0;border-radius:6px;padding:6px 8px;font-family:'Montserrat',sans-serif;font-size:12px;color:var(--text-dark);outline:none;transition:border-color .2s;"
+                onfocus="this.style.borderColor='#2251c5';this.style.background='#fff'"
+                onblur="this.style.borderColor='#d8ddf0';this.style.background='#fafbff'"
+              >
+            </td>`;
+          } else {
+            html += `<td class="${frozenCls}">${esc(val)}</td>`;
+          }
+
+        } else if (['FAT 365D','FAT M-1','FAT M-3','FAT M-2','FAT M LY','META FAT','FATURAMENTO'].includes(col.key)) {
+          html += `<td class="col-fat${frozenCls}">${formatNum(val)}</td>`;
+
+        } else if (col.key === 'CREDITO_ALLIANZ') {
+          const n = parseFloat(String(val).replace(',','.')) || 0;
+          const display = n > 0 ? Math.round(n).toLocaleString('pt-BR') : '—';
+          html += `<td style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;text-align:right;color:${n>0?'var(--text-dark)':'var(--text-light)'};">${display}</td>`;
+
+        } else if (col.key === 'POSITIVAÇÃO') {
+          const posit = parseInt(val) || 0;
+          html += `<td class="col-fat${frozenCls}" style="color:${posit>0?'var(--green)':'var(--text-light)'};">${posit > 0 ? posit : '—'}</td>`;
+
+        } else if (col.key === 'DIAS_VENDA') {
+          const diasDisplay = (val||'').replace(/[;,]/g,' - ').replace(/^\s*-\s*|\s*-\s*$/g,'');
+          html += `<td class="td-left td-dias-venda" style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:12px;color:var(--blue-mid);white-space:nowrap;">${diasDisplay || '—'}</td>`;
+
+        } else if (col.key === 'FREQUENCIA') {
+          const n = parseInt(val) || 0;
+          html += `<td style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;text-align:center;color:${n>0?'var(--green)':'var(--text-light)'};">${n > 0 ? n : '—'}</td>`;
+
+        } else if (col.key === 'EM CONTATO') {
+          const hoje = new Date().getDate();
+          const diasContato = (row['DIAS_CONTATO']||'').split(/[;,]/).map(d => parseInt(d.trim(),10)).filter(Boolean);
+          const contatoHoje = diasContato.includes(hoje);
+          html += `<td style="padding:4px 8px !important;white-space:nowrap;">
+            <div class="contato-btns">
+              <button class="btn-contato ${contatoHoje?'sim-active':''}"
+                data-rowidx="${realIdx}" data-col="EM CONTATO" data-val="SIM"
+                onclick="onContatoBtn(this)">HOJE</button>
+            </div>
+          </td>`;
+
+        } else if (col.key === 'DIAS_CONTATO') {
+          const diasDisplay = (row['DIAS_CONTATO']||'').replace(/[;,]/g,' - ').replace(/^\s*-\s*|\s*-\s*$/g,'');
+          html += `<td class="dias-contato-cell td-left" style="padding:6px 14px !important;">${diasDisplay || ''}</td>`;
+
+        } else if (['CARTEIRA','NÃO VENDA'].includes(col.key)) {
+          const up  = val.toUpperCase();
+          const isSim = up === 'SIM';
+          const isNaoVenda = col.key === 'NÃO VENDA';
+          const fatRow = parseFloat(String(row['FATURAMENTO']||'0').replace(',','.')) || 0;
+          // CARTEIRA: se FAT > 0 → sempre SIM, sem edição — mesma formatação da coluna VENDA
+          if (!isNaoVenda && fatRow > 0) {
+            html += `<td class="col-venda-auto sim">SIM</td>`;
+          // NÃO VENDA: se FAT > 0 → célula em branco, sem edição
+          } else if (isNaoVenda && fatRow > 0) {
+            html += `<td class="col-select"><span style="color:var(--text-light);font-size:11px;">—</span></td>`;
+          } else {
+            const selClass = isSim
+              ? (isNaoVenda ? 'val-nao' : 'val-sim')
+              : (val ? (isNaoVenda ? 'val-sim' : 'val-nao') : '');
+            html += `<td class="col-select">
+              <select class="${selClass}" data-rowidx="${realIdx}" data-col="${esc(col.key)}" onchange="onSelectChange(this)">
+                <option value=""${!val?'selected':''}></option>
+                <option value="SIM"${isSim?'selected':''}>SIM</option>
+                <option value="NÃO"${(!isSim&&val)?'selected':''}>NÃO</option>
+              </select>
+            </td>`;
+          }
+
+        } else if (col.key === 'VENDA') {
+          const fat = parseFloat(String(row['FATURAMENTO'] || '0').replace(',','.')) || 0;
+          const venda = fat > 0 ? 'SIM' : 'NÃO';
+          row['VENDA'] = venda;
+          html += `<td class="col-venda-auto ${venda === 'SIM' ? 'sim' : 'nao'}">${venda}</td>`;
+
+        } else if (col.key === 'MOTIVO (NÃO VENDA)') {
+          const motivos = [
+            'ESTOQUE CHEIO','SEM CRÉDITO','FALTA DE ESTOQUE MATRIZ',
+            'FALTA DE PRODUTO','PREÇO CONCORRENTE','PRODUTO SEM GRADE',
+            'SEM RETORNO','INADIMPLENTE',
+          ];
+          const fatRow2  = parseFloat(String(row['FATURAMENTO']||'0').replace(',','.')) || 0;
+          const naoVendaSim = (row['NÃO VENDA']||'').toUpperCase() === 'SIM';
+          // Se FAT > 0 ou NÃO VENDA ≠ SIM → célula em branco, sem edição
+          if (fatRow2 > 0 || !naoVendaSim) {
+            html += `<td class="col-select"><span style="color:var(--text-light);font-size:11px;">—</span></td>`;
+          } else {
+            let opts = `<option value=""${!val?'selected':''}></option>`;
+            motivos.forEach(m => {
+              opts += `<option value="${m}"${val.toUpperCase()===m?'selected':''}>${m}</option>`;
+            });
+            const semMotivo = !val.trim();
+            const bgStyle   = semMotivo ? 'background:#ffe0e0;' : '';
+            const selStyle  = semMotivo ? 'border:1.5px solid #d42b2b;border-radius:4px;' : '';
+            html += `<td class="col-select" style="${bgStyle}">
+              <select data-rowidx="${realIdx}" data-col="${esc(col.key)}" onchange="onSelectChange(this)" style="min-width:180px;${selStyle}">
+                ${opts}
+              </select>
+            </td>`;
+          }
+
+        } else if (col.key === 'OBSERVAÇÕES (PREENCHIMENTO LIVRE)') {
+          html += `<td style="padding:4px 8px !important;min-width:220px;">
+            <textarea
+              data-rowidx="${realIdx}"
+              data-col="${esc(col.key)}"
+              onchange="onSelectChange(this)"
+              rows="2"
+              style="width:100%;min-width:210px;resize:vertical;background:#fafbff;border:1.5px solid #d8ddf0;border-radius:6px;padding:5px 8px;font-family:'Open Sans',sans-serif;font-size:12px;color:var(--text-dark);outline:none;transition:border-color .2s;"
+              onfocus="this.style.borderColor='#2251c5';this.style.background='#fff'"
+              onblur="this.style.borderColor='#d8ddf0';this.style.background='#fafbff'"
+            >${esc(val)}</textarea>
+          </td>`;
+
+        } else if (col.key === 'GRUPO_  COMERCIAL') {
+          const n = parseFloat(String(val).replace(',','.'));
+          const display = isNaN(n) ? val : Math.round(n).toString();
+          if (isNew) {
+            html += `<td class="${frozenCls}" style="padding:4px 8px !important;">
+              <input type="text"
+                data-rowidx="${realIdx}" data-col="${esc(col.key)}"
+                onchange="onSelectChange(this)"
+                value="${esc(display)}"
+                placeholder="Código"
+                style="width:80px;background:#fafbff;border:1.5px solid #d8ddf0;border-radius:6px;padding:6px 8px;font-family:'Montserrat',sans-serif;font-size:12px;color:var(--text-dark);outline:none;transition:border-color .2s;"
+                onfocus="this.style.borderColor='#2251c5';this.style.background='#fff'"
+                onblur="this.style.borderColor='#d8ddf0';this.style.background='#fafbff'"
+              >
+            </td>`;
+          } else {
+            const codGCnorm = isNaN(parseFloat(String(val).replace(',','.'))) ? val : String(Math.round(parseFloat(String(val).replace(',','.'))));
+            const hasCompras = ultComprasData[codGCnorm] && ultComprasData[codGCnorm].length > 0;
+            html += `<td class="${frozenCls}" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:var(--text-dark);">
+              <div style="display:flex;align-items:center;gap:6px;justify-content:center;">
+                ${esc(display)}
+                ${hasCompras ? `<button onclick="openUltCompras('${codGCnorm}','${esc(row['NOME_GC']||'')}',this)" title="Últimas compras"
+                  style="background:linear-gradient(135deg,#7b2ff7,#5a0fc8);border:none;border-radius:4px;padding:3px 7px;cursor:pointer;color:#fff;font-size:13px;line-height:1;">
+                  🛒</button>
+                <button onclick="openInsight('${codGCnorm}','${esc(row['NOME_GC']||'')}',this)" title="Sugestão inteligente"
+                  style="background:linear-gradient(135deg,#f0a500,#c47d00);border:none;border-radius:4px;padding:3px 7px;cursor:pointer;color:#fff;font-size:13px;line-height:1;">
+                  ⭐</button>` : ''}
+              </div>
+            </td>`;
+          }
+
+        } else if (col.key === 'TELEFONE') {
+          const phone = val.replace(/\D/g,'');
+          const num   = phone.startsWith('55') ? phone : (phone.length >= 8 ? '55' + phone : phone);
+          const wppSvg = `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;display:block;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.117 1.528 5.855L.057 23.52a.75.75 0 00.923.923l5.666-1.471A11.953 11.953 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.718 9.718 0 01-4.964-1.361l-.356-.212-3.691.958.974-3.579-.231-.368A9.718 9.718 0 012.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>`;
+          html += `<td style="text-align:center;padding:6px 10px !important;">
+            ${phone.length >= 8
+              ? `<button class="btn-wpp" onclick="window.open('https://wa.me/${num}','_blank')" title="${esc(val)}" style="padding:6px 8px;">${wppSvg}</button>`
+              : `<span title="Sem telefone" style="display:inline-block;opacity:.25;">${wppSvg.replace('fill="currentColor"','fill="#7a86a8"')}</span>`
+            }
+          </td>`;
+
+        } else if (col.key === 'EMAIL') {
+          html += `<td style="text-align:center;padding:6px 10px !important;">
+            ${val
+              ? `<a href="mailto:${esc(val)}" title="${esc(val)}" target="_blank"
+                  style="display:inline-flex;align-items:center;justify-content:center;
+                         width:30px;height:30px;border-radius:6px;
+                         background:rgba(26,63,168,.1);color:var(--blue-mid);
+                         transition:background .2s;"
+                  onmouseover="this.style.background='rgba(26,63,168,.2)'"
+                  onmouseout="this.style.background='rgba(26,63,168,.1)'">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/>
+                  </svg>
+                </a>`
+              : `<span style="opacity:.2;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#7a86a8" stroke-width="2" style="width:15px;height:15px;">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/>
+                  </svg>
+                </span>`
+            }
+          </td>`;
+
+        } else if (col.key === 'CONTATO') {
+          html += `<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(val)}">${esc(val)}</td>`;
+
+        } else if (col.key.startsWith('% FAT_')) {
+          // Formata como porcentagem inteira
+          // Suporta tanto 0.76 (decimal) quanto 76 (já em %)
+          const raw = String(val).replace('%','').replace(',','.').trim();
+          const num = parseFloat(raw);
+          let pctDisplay = '—';
+          if (!isNaN(num)) {
+            // Se o valor é menor que 2, provavelmente está em formato decimal (0.76 = 76%)
+            const pctN = num <= 2 && num > 0 ? Math.round(num * 100) : Math.round(num);
+            pctDisplay = pctN + '%';
+          }
+          html += `<td style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;text-align:center;color:${pctDisplay!=='—'&&pctDisplay!=='0%'?'var(--blue-mid)':'var(--text-light)'};">${pctDisplay}</td>`;
+
+        } else if (col.key === 'DT_ULT_COMPRA') {
+          const gc = (() => { const g=(row['GRUPO_  COMERCIAL']||'').trim(); const n=parseFloat(g.replace(',','.')); return isNaN(n)?g:String(Math.round(n)); })();
+          const entries = ultComprasData[gc];
+          const dtStr = entries && entries.length > 0 ? entries[0].ultData : (val || '');
+          let diasSemVenda = '—';
+          let cor = 'var(--text-light)';
+          if (dtStr) {
+            // Suporta DD/MM/YYYY ou YYYY-MM-DD
+            let dtParts, dtObj;
+            if (dtStr.includes('/')) {
+              dtParts = dtStr.split('/');
+              dtObj = new Date(+dtParts[2], +dtParts[1]-1, +dtParts[0]);
+            } else {
+              dtObj = new Date(dtStr);
+            }
+            if (!isNaN(dtObj.getTime())) {
+              const diff = Math.floor((Date.now() - dtObj.getTime()) / 86400000);
+              diasSemVenda = diff;
+              // Cor baseada no fator dinâmico de prioridade
+              const med = entries && entries.length > 0 ? parseFloat(entries[0].tempoMedio||0) : 0;
+              const fator = med < 8 ? 2.5 : med <= 18 ? 2.0 : med <= 45 ? 1.7 : 1.3;
+              cor = diff > med * fator ? '#d42b2b' : diff > med ? '#f0a500' : 'var(--green)';
+            }
+          }
+          html += `<td style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:${cor};white-space:nowrap;">${diasSemVenda}</td>`;
+
+        } else {
+          html += `<td title="${esc(val)}">${esc(val)}</td>`;
+        }
+      });  // fecha DISPLAY_COLS.forEach
+      html += `</tr>`;
+    });    // fecha pageRows.forEach
+  }
+
+  html += `</tbody></table></div>`;
+
+  // Pagination
+  if (totalPages > 1) {
+    html += `<div class="table-footer">
+      <span class="page-info">Página ${currentPage} de ${totalPages} · ${filteredRows.length} registros</span>
+      <div class="page-btns">
+        <button class="page-btn" id="btnPrev" ${currentPage===1?'disabled':''}>‹</button>`;
+    pageRange(currentPage, totalPages).forEach(p => {
+      html += p==='...'
+        ? `<button class="page-btn" disabled>…</button>`
+        : `<button class="page-btn ${p===currentPage?'active':''}" data-pg="${p}">${p}</button>`;
+    });
+    html += `<button class="page-btn" id="btnNext" ${currentPage===totalPages?'disabled':''}>›</button>
+      </div></div>`;
+  }
+
+  // Botão adicionar novo cliente
+  html += `
+    <div style="padding:16px 20px;border-top:1px solid #eef0f8;">
+      <button id="btnAddClient"
+        style="display:inline-flex;align-items:center;gap:8px;
+               background:linear-gradient(135deg,#2251c5,#0f2670);
+               border:none;border-radius:8px;padding:11px 22px;
+               font-family:'Montserrat',sans-serif;font-weight:700;
+               font-size:12px;letter-spacing:1.5px;text-transform:uppercase;
+               color:#fff;cursor:pointer;
+               box-shadow:0 3px 12px rgba(26,63,168,.3);
+               transition:transform .15s,box-shadow .2s;">
+        ＋ Adicionar Novo Cliente
+      </button>
+    </div>`;
+
+  area.innerHTML = html;
+
+  // Bind search
+  const si = document.getElementById('tblSearch');
+  if (si) {
+    si.addEventListener('input', function(){
+      searchTerm = this.value;
+      applyFilters();
+      const pos = this.selectionStart;
+      renderTable();
+      const el = document.getElementById('tblSearch');
+      if (el) { el.focus(); el.setSelectionRange(pos, pos); }
+    });
+  }
+}
+
+function applyFilters() {
+  currentPage = 1;
+
+  const checkFilter = (f, row) => {
+    if (f === 'TODOS') return true;
+    if (f === '__NAO_VENDA__') return (row['VENDA']||'').toUpperCase() !== 'SIM';
+    if (f === '__NAO_VENDA_SIM__') return (row['NÃO VENDA']||'').toUpperCase() === 'SIM';
+    if (f === '__EM_CONTATO__') {
+      const hoje = new Date().getDate();
+      const dias = (row['DIAS_CONTATO']||'').split(/[;,\-]/).map(d => parseInt(d.trim(),10)).filter(Boolean);
+      return dias.includes(hoje);
+    }
+    if (f === '__PRIORIDADE__') {
+      const gc = (() => { const g=(row['GRUPO_  COMERCIAL']||'').trim(); const n=parseFloat(g.replace(',','.')); return isNaN(n)?g:String(Math.round(n)); })();
+      const c3 = ultComprasData[gc];
+      if (!c3 || c3.length === 0) return false;
+      const first = c3[0];
+      const qtd = parseInt(first.qtdDatas||0,10);
+      const ina = parseFloat(first.tempoInativo||0);
+      const med = parseFloat(first.tempoMedio||0);
+      if (qtd <= 4 || med <= 0 || ina >= 120) return false;
+      // Fator dinâmico: ciclo curto = alerta mais sensível
+      const fator = med < 8 ? 2.5 : med <= 18 ? 2.0 : med <= 45 ? 1.7 : 1.3;
+      return ina > med * fator;
+    }
+    // cluster normal
+    return (row['CLUSTER']||'').toUpperCase() === f.toUpperCase();
+  };
+
+  filteredRows = activeRows.filter(row => {
+    // AND entre todos os filtros ativos (exceto TODOS que é sempre true)
+    const filtersOk = [...activeFilters].every(f => checkFilter(f, row));
+    const term = searchTerm.toLowerCase().trim();
+    const searchOk = !term || Object.values(row).some(v => String(v).toLowerCase().includes(term));
+    return filtersOk && searchOk;
+  });
+
+  const el = document.getElementById('dashClientCount');
+  if (el) el.textContent = filteredRows.length + ' cliente(s)';
+  renderStats(filteredRows);
+}
+
+// helpers
+function formatNum(v) {
+  const n = parseFloat(String(v).replace(',','.'));
+  if (isNaN(n)) return esc(v);
+  return 'R$ ' + n.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function pageRange(cur, total) {
+  const delta=2; const range=[]; const out=[]; let l;
+  for(let i=1;i<=total;i++){if(i===1||i===total||(i>=cur-delta&&i<=cur+delta))range.push(i);}
+  range.forEach(i=>{if(l){if(i-l===2)out.push(l+1);else if(i-l!==1)out.push('...');}out.push(i);l=i;});
+  return out;
+}
+
+// ─────────────────────────────────────────────
+// DROPDOWN CHANGE HANDLER
+// ─────────────────────────────────────────────
+function onSelectChange(el) {
+  const realIdx = +el.dataset.rowidx;
+  const col     = el.dataset.col;
+  const newVal  = el.value;
+
+  // Atualiza o dado na filteredRows
+  const row = filteredRows[realIdx];
+  if (!row) return;
+  row[col] = newVal;
+
+  // Aplica classe visual apenas em <select> (não em <textarea>)
+  if (el.tagName === 'SELECT') {
+    const isNaoVenda = col === 'NÃO VENDA';
+    if (newVal === 'SIM') {
+      el.className = isNaoVenda ? 'val-nao' : 'val-sim';
+    } else if (newVal) {
+      el.className = isNaoVenda ? 'val-sim' : 'val-nao';
+    } else {
+      el.className = '';
+    }
+  }
+
+  // Se NÃO VENDA mudou → re-renderiza a linha inteira para mostrar/esconder MOTIVO
+  if (col === 'NÃO VENDA') {
+    // Captura posição do scroll ANTES do render
+    const tableScrollEl = document.querySelector('.table-scroll');
+    const scrollLeft    = tableScrollEl ? tableScrollEl.scrollLeft : 0;
+    const scrollTop     = tableScrollEl ? tableScrollEl.scrollTop  : 0;
+
+    renderTable();
+
+    // Após render, encontra o NOVO elemento (foi recriado pelo innerHTML)
+    // e restaura imediatamente + com rAF para garantir
+    const restore = () => {
+      const newScroll = document.querySelector('.table-scroll');
+      if (newScroll) {
+        newScroll.scrollLeft = scrollLeft;
+        newScroll.scrollTop  = scrollTop;
+      }
+    };
+    restore();
+    requestAnimationFrame(restore);
+
+    // Aplica fundo vermelho na célula MOTIVO se necessário
+    requestAnimationFrame(() => {
+      const pageIdx2 = realIdx - (currentPage - 1) * PAGE_SIZE;
+      const tr2 = document.querySelectorAll('tbody tr')[pageIdx2];
+      if (tr2) {
+        const naoVendaSim = (row['NÃO VENDA']||'').toUpperCase() === 'SIM';
+        const motivoVazio = !(row['MOTIVO (NÃO VENDA)']||'').trim();
+        const motivoTd2   = tr2.querySelector(`td select[data-col="MOTIVO (NÃO VENDA)"]`)?.closest('td');
+        if (motivoTd2) {
+          motivoTd2.style.background = (naoVendaSim && motivoVazio) ? '#ffe0e0' : '';
+          const sel2 = motivoTd2.querySelector('select');
+          if (sel2) sel2.style.border = (naoVendaSim && motivoVazio) ? '1.5px solid #d42b2b' : '';
+        }
+      }
+    });
+    return;
+  }
+
+  // Se MOTIVO mudou → remove destaque laranja se preenchido
+  if (col === 'MOTIVO (NÃO VENDA)') {
+    const pageIdx = realIdx - (currentPage - 1) * PAGE_SIZE;
+    const allTrs  = document.querySelectorAll('tbody tr');
+    const tr      = allTrs[pageIdx];
+    if (tr) {
+      const motivoTd = tr.querySelector(`td select[data-col="MOTIVO (NÃO VENDA)"]`)?.closest('td');
+      if (motivoTd) {
+        // Limpa destaque ao selecionar qualquer valor
+        motivoTd.style.background = '';
+        const sel = motivoTd.querySelector('select');
+        if (sel) sel.style.border = '';
+      }
+    }
+  }
+  renderStats(filteredRows.length > 0 ? filteredRows : activeRows);
+  scheduleSave();
+}
+// adicionado uma única vez — nunca removido
+// ─────────────────────────────────────────────
+document.getElementById('tableArea').addEventListener('click', function(e) {
+  if (e.target.tagName === 'SELECT' || e.target.tagName === 'OPTION') return;
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  if (e.target.closest('.btn-contato')) return;
+
+  // Cluster chip
+  const chip = e.target.closest('.filter-chip');
+  if (chip) {
+    const val = chip.dataset.cluster || 'TODOS';
+    if (e.ctrlKey || e.metaKey) {
+      // Ctrl+click: toggle o chip sem desativar os outros
+      if (val === 'TODOS') {
+        activeFilters = new Set(['TODOS']);
+      } else {
+        activeFilters.delete('TODOS');
+        if (activeFilters.has(val)) {
+          activeFilters.delete(val);
+          if (activeFilters.size === 0) activeFilters.add('TODOS');
+        } else {
+          activeFilters.add(val);
+        }
+      }
+    } else {
+      // Clique simples: seleciona só este
+      activeFilters = new Set([val]);
+    }
+    currentPage = 1;
+    applyFilters();
+    renderTable();
+    return;
+  }
+  // Página numerada
+  const pgBtn = e.target.closest('.page-btn[data-pg]');
+  if (pgBtn && !pgBtn.disabled) {
+    currentPage = +pgBtn.dataset.pg;
+    renderTable();
+    return;
+  }
+  // Anterior
+  const prevBtn = e.target.closest('#btnPrev');
+  if (prevBtn && !prevBtn.disabled && currentPage > 1) {
+    currentPage--;
+    renderTable();
+    return;
+  }
+  // Próximo
+  const nextBtn = e.target.closest('#btnNext');
+  if (nextBtn && !nextBtn.disabled) {
+    const totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
+    if (currentPage < totalPages) { currentPage++; renderTable(); }
+    return;
+  }
+  // Adicionar novo cliente
+  const addBtn = e.target.closest('#btnAddClient');
+  if (addBtn) { addNewClient(); return; }
+});
+
+// ─────────────────────────────────────────────
+// ADICIONAR NOVO CLIENTE
+// ─────────────────────────────────────────────
+function addNewClient() {
+  // Cria linha vazia com todas as chaves de DISPLAY_COLS + flag de nova linha
+  const newRow = { _isNew: true };
+  DISPLAY_COLS.forEach(col => { newRow[col.key] = ''; });
+  newRow['CARTEIRA'] = 'SIM';
+  newRow['CLUSTER']  = 'DEMAIS';
+
+  // Insere no topo de activeRows e filteredRows
+  activeRows.unshift(newRow);
+  filteredRows.unshift(newRow);
+
+  // Vai para página 1 para mostrar a nova linha
+  currentPage = 1;
+  renderTable();
+
+  // Foca no primeiro campo editável da nova linha (textarea de NOME_GC não existe — foca no input de Grupo Comercial ou na célula de nome via scroll)
+  setTimeout(() => {
+    // Scroll até o topo da tabela
+    const tableScroll = document.querySelector('.table-scroll');
+    if (tableScroll) tableScroll.scrollTop = 0;
+    // Foca no primeiro input/select/textarea da primeira linha
+    const firstInput = document.querySelector('tbody tr:first-child input, tbody tr:first-child select, tbody tr:first-child textarea');
+    if (firstInput) firstInput.focus();
+  }, 80);
+
+  // Atualiza contador
+  const el = document.getElementById('dashClientCount');
+  if (el) el.textContent = filteredRows.length + ' cliente(s)';
+  const statEl = document.querySelector('#statsRow .stat-value');
+  if (statEl) statEl.textContent = activeRows.length;
+  scheduleSave();
+}
+
+// ─────────────────────────────────────────────
+// SALVAR PAINEL — funciona com file:// local
+// ─────────────────────────────────────────────
+document.getElementById('btnSavePainel').addEventListener('click', savePainel);
+
+// Limpar cache apenas do vendedor ativo (botão no dashboard)
+function limparCacheVendedor() {
+  if (!activeSeller) return;
+  const keys = ['pmg2_' + activeSeller.csvName, 'pmg_lastSave_' + activeSeller.name];
+  keys.forEach(k => localStorage.removeItem(k));
+  // Limpa campos na memória
+  (csvData[activeSeller.csvName] || []).forEach(row => {
+    ['EM CONTATO','DIAS_CONTATO','NÃO VENDA','MOTIVO (NÃO VENDA)','OBSERVAÇÕES (PREENCHIMENTO LIVRE)','CARTEIRA','WHATSAPP','VENDA'].forEach(f => { if (row[f] !== undefined) row[f] = ''; });
+  });
+  const banner = document.getElementById('cacheWarningBanner');
+  if (banner) banner.style.display = 'none';
+  renderTable();
+}
+
+// LIMPAR CACHE — apaga localStorage de todos os vendedores
+// ─────────────────────────────────────────────
+document.getElementById('btnLimparCache').addEventListener('click', () => {
+  const keysFound = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && (k.startsWith('pmg2_') || k.startsWith('pmg_lastSave_'))) keysFound.push(k);
+  }
+  if (keysFound.length === 0) { alert('Nenhum dado de cache encontrado.'); return; }
+  const nomes = keysFound.filter(k => k.startsWith('pmg2_')).map(k => k.replace('pmg2_',''));
+  const msg = '⚠️ Apagar os dados locais de:\n\n' + (nomes.join(', ') || keysFound.join(', '))
+            + '\n\n(Dias Contato, Carteira, Observações, Não Venda etc)\n\nDeseja continuar?';
+  if (!confirm(msg)) return;
+  keysFound.forEach(k => localStorage.removeItem(k));
+  allSellers.forEach(s => {
+    (csvData[s.csvName] || []).forEach(row => {
+      ['EM CONTATO','DIAS_CONTATO','NÃO VENDA','MOTIVO (NÃO VENDA)','OBSERVAÇÕES (PREENCHIMENTO LIVRE)','CARTEIRA','WHATSAPP','VENDA'].forEach(f => { if (row[f] !== undefined) row[f] = ''; });
+    });
+  });
+  renderTable();
+  const btn = document.getElementById('btnLimparCache');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span style="font-size:16px;">✅</span> Cache Limpo!';
+  btn.style.background = 'linear-gradient(135deg,#109150,#0c7a44)';
+  setTimeout(() => { btn.innerHTML = orig; btn.style.background = 'linear-gradient(135deg,#b84040,#8a1c1c)'; }, 3000);
+});
+
+// Input oculto para ler o próprio arquivo HTML
+const _htmlPicker = document.createElement('input');
+_htmlPicker.type = 'file';
+_htmlPicker.accept = '.html';
+_htmlPicker.style.display = 'none';
+document.body.appendChild(_htmlPicker);
+
+_htmlPicker.addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => _buildPainel(ev.target.result);
+  reader.readAsText(file, 'UTF-8');
+  this.value = '';
+});
+
+function savePainel() {
+  const totalRows = sellers.reduce((acc, s) => acc + (csvData[s.csvName] || []).length, 0);
+  if (totalRows === 0) {
+    alert('Nenhum dado carregado. Importe o CSV base e o Venda Diária primeiro.');
+    return;
+  }
+  _htmlPicker.click();
+}
+
+function _buildPainel(sourceHTML) {
+  const btn = document.getElementById('btnSavePainel');
+  btn.innerHTML = `<span style="font-size:16px;">⏳</span> Gerando...`;
+  btn.style.pointerEvents = 'none';
+
+  try {
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const dateLabel = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+    const dateFmt   = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}`;
+    const dataSnapshot = JSON.stringify(csvData);
+
+    // 1. Muda título
+    sourceHTML = sourceHTML.replace('<h1>Menu Inicial</h1>', '<h1>Painel de Vendedores</h1>');
+
+    // 2. Força a URL do webhook correta no arquivo gerado
+    const webhookUrl = SHEETS_WEBHOOK_URL;
+    sourceHTML = sourceHTML.replace(
+      /const SHEETS_WEBHOOK_URL = '[^']*';/,
+      () => `const SHEETS_WEBHOOK_URL = '${webhookUrl}';`
+    );
+
+    // 3. Injeta dados no SENTINEL — único ponto seguro que não existe em nenhuma string JS
+    const SENTINEL = '<!--__PMG_PRELOAD_SLOT__-->';
+    const dataScript = '<scr' + 'ipt>(function(){window.__PMG_DATA__='
+      + dataSnapshot
+      + ';window.__PMG_META__=' + JSON.stringify(sellerMeta)
+      + ';window.__PMG_METAP__=' + JSON.stringify(sellerMetaPosit)
+      + ';window.__PMG_3ULT__=' + JSON.stringify(ultComprasData)
+      + ';window.__PMG_CADASTRO__=' + JSON.stringify(cadastroData)
+      + ';window.__PMG_DATE__=\'' + dateFmt + '\';window.__PMG_IS_PAINEL__=true;})()</scr' + 'ipt>';
+    sourceHTML = sourceHTML.replace(SENTINEL, dataScript);
+
+    const blob = new Blob([sourceHTML], { type: 'text/html;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = 'PAINEL_VENDEDORES_PMG3.0.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    btn.innerHTML = `<span style="font-size:16px;">✅</span> Salvo!`;
+  } catch(e) {
+    console.error(e);
+    btn.innerHTML = `<span style="font-size:16px;">⚠</span> Erro`;
+    alert('Erro ao gerar o painel: ' + e.message);
+  } finally {
+    btn.style.pointerEvents = '';
+    setTimeout(() => { btn.innerHTML = `<span style="font-size:16px;">💾</span> Salvar Painel`; }, 4000);
+  }
+}
+
+// ─────────────────────────────────────────────
+// CARREGAR PAINÉIS DOS VENDEDORES
+// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// IMPORTAR DO GOOGLE SHEETS
+// ─────────────────────────────────────────────
+const _btnIS = document.getElementById('btnImportSheets');
+if (_btnIS) _btnIS.addEventListener('click', () => {
+  const statusEl = document.getElementById('painelStatus');
+  // file:// → abre aba com a URL e mostra área de colar JSON
+  if (location.protocol === 'file:' || location.origin === 'null') {
+    window.open(SHEETS_WEBHOOK_URL + '?action=export', '_blank');
+    const jsonArea = document.getElementById('sheetsJsonArea');
+    if (jsonArea) jsonArea.style.display = 'block';
+    if (statusEl) {
+      statusEl.innerHTML = '📋 Copie todo o JSON da aba aberta e cole abaixo:';
+      statusEl.style.color = '#f0a500';
+    }
+    return;
+  }
+  // HTTPS → fetch direto via proxy Netlify
+  runImportSheets(_btnIS, statusEl);
+});
+
+// Botão no dashboard (painel do vendedor — Netlify)
+document.getElementById('btnDashImportSheets').addEventListener('click', () => {
+  // Cria um statusEl temporário abaixo do botão se não houver um visível
+  const btn = document.getElementById('btnDashImportSheets');
+  let statusEl = document.getElementById('dashSheetsStatus');
+  if (!statusEl) {
+    statusEl = document.createElement('div');
+    statusEl.id = 'dashSheetsStatus';
+    statusEl.style.cssText = 'font-family:Montserrat,sans-serif;font-size:11px;font-weight:600;color:#fff;margin-top:4px;text-align:right;max-width:200px;';
+    btn.parentElement.appendChild(statusEl);
+  }
+  runImportSheets(btn, statusEl);
+});
+
+async function runImportSheets(btn, statusEl) {
+  if (location.protocol === 'file:' || location.origin === 'null') {
+    if (statusEl) { statusEl.innerHTML = `⚠️ Só funciona no Netlify (HTTPS).`; statusEl.style.color = '#f0a500'; }
+    return;
+  }
+
+  btn.innerHTML = `<span style="font-size:16px;">⏳</span> Buscando...`;
+  btn.style.pointerEvents = 'none';
+  if (statusEl) { statusEl.textContent = '⏳ Buscando dados do Google Sheets...'; statusEl.style.color = 'var(--text-light)'; }
+
+  try {
+    // Usa proxy Netlify (/api/sheets) apenas no Netlify — GitHub Pages usa URL direta
+    const isNetlify = location.hostname.includes('netlify.app') || location.hostname.includes('netlify.com');
+    const baseUrl   = isNetlify ? '/api/sheets' : SHEETS_WEBHOOK_URL;
+    const exportUrl = baseUrl + '?action=export';
+    const resp = await fetch(exportUrl);
+    const text = await resp.text();
+    console.log('[PMG Sheets] status:', resp.status, 'length:', text.length);
+    console.log('[PMG Sheets] preview:', text.substring(0, 300));
+    const jsonStart = text.indexOf('{');
+    const jsonEnd   = text.lastIndexOf('}');
+    if (jsonStart === -1 || jsonEnd === -1) {
+      // Mostra o conteúdo da resposta para diagnóstico
+      const preview = text.substring(0, 200);
+      if (text.includes('<title>Erro</title>') || text.includes('errorMessage')) {
+        throw new Error('Apps Script retornou página de erro. Verifique se a implantação está como "Qualquer pessoa" (sem conta Google).');
+      }
+      throw new Error('Resposta inválida. Preview: ' + preview);
+    }
+    const data = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
+
+    if (data.status !== 'ok' || !data.vendedores) {
+      throw new Error(data.msg || 'Resposta inválida do servidor');
+    }
+
+    _processSheetsData(data, btn, statusEl);
+
+  } catch(e) {
+    console.error(e);
+    btn.innerHTML = `<span style="font-size:16px;">⚠</span> Erro`;
+    if (statusEl) { statusEl.textContent = `⚠ Erro: ${e.message}`; statusEl.style.color = 'var(--red)'; }
+  } finally {
+    btn.style.pointerEvents = '';
+    setTimeout(() => { btn.innerHTML = `<span style="font-size:16px;">📊</span> Importar G.Sheets`; }, 4000);
+  }
+}
+
+function _cleanDias(val) {
+  // Remove apóstrofo prefix e converte datas indesejadas para string limpa
+  if (!val) return '';
+  const s = String(val).trim().replace(/^'/, '');
+  // Se parece com uma data JS (Mon Dec...), tenta extrair o dia
+  if (s.includes('GMT') || s.includes('Horário')) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return String(d.getDate());
+  }
+  return s;
+}
+
+function _processSheetsData(data, btn, statusEl) {
+  const CAMPOS_MAP = {
+    'CARTEIRA':    'CARTEIRA',
+    'EM CONTATO':  'EM CONTATO',
+    'DIAS CONTATO':'DIAS_CONTATO',
+    'NÃO VENDA':   'NÃO VENDA',
+    'MOTIVO':      'MOTIVO (NÃO VENDA)',
+    'OBSERVAÇÕES': 'OBSERVAÇÕES (PREENCHIMENTO LIVRE)',
+  };
+
+  let totalLinhas = 0;
+
+  Object.keys(data.vendedores).forEach(vendedor => {
+    const seller = allSellers.find(s => s.name === vendedor);
+    if (!seller) return;
+    const sheetsRows = data.vendedores[vendedor];
+    if (!sheetsRows || sheetsRows.length === 0) return;
+    if (!csvData[seller.csvName]) csvData[seller.csvName] = [];
+
+    sheetsRows.forEach(sheetsRow => {
+      const grpRaw = String(sheetsRow['GRUPO COMERCIAL'] || '').trim();
+      const grpN   = parseFloat(grpRaw.replace(',', '.'));
+      const codGC  = isNaN(grpN) ? grpRaw : String(Math.round(grpN));
+      if (!codGC) return;
+
+      let existing = csvData[seller.csvName].find(r => {
+        const g = (r['GRUPO_  COMERCIAL'] || '').trim();
+        const n = parseFloat(g.replace(',', '.'));
+        return (isNaN(n) ? g : String(Math.round(n))) === codGC;
+      });
+
+      if (existing) {
+        Object.keys(CAMPOS_MAP).forEach(sheetCol => {
+          const csvCol = CAMPOS_MAP[sheetCol];
+          let v = sheetsRow[sheetCol];
+          if (v === undefined || v === '') return;
+          if (csvCol === 'DIAS_CONTATO') v = _cleanDias(v);
+          existing[csvCol] = v;
+        });
+      } else {
+        const newRow = { '_fromDiario': true, 'VENDEDOR': seller.csvName };
+        newRow['GRUPO_  COMERCIAL'] = codGC;
+        newRow['NOME_GC']           = sheetsRow['CLIENTE'] || '';
+        newRow['CLUSTER']           = 'DEMAIS';
+        newRow['FATURAMENTO']       = sheetsRow['FAT. MÊS'] || '0';
+        newRow['DIAS_VENDA']        = _cleanDias(sheetsRow['DIAS VENDA']);
+        newRow['FREQUENCIA']        = sheetsRow['FREQUÊNCIA'] || '0';
+        newRow['POSITIVAÇÃO']       = sheetsRow['POSIT. MÊS'] || '0';
+        newRow['DIAS_CONTATO']      = _cleanDias(sheetsRow['DIAS CONTATO'] || sheetsRow['DIAS VENDA']);
+        newRow['EM CONTATO']        = newRow['DIAS_CONTATO'] ? 'SIM' : '';
+        newRow['CARTEIRA']          = 'SIM';
+        Object.keys(CAMPOS_MAP).forEach(sheetCol => {
+          const csvCol = CAMPOS_MAP[sheetCol];
+          if (sheetsRow[sheetCol] !== undefined && sheetsRow[sheetCol] !== '') newRow[csvCol] = sheetsRow[sheetCol];
+        });
+        csvData[seller.csvName].push(newRow);
+      }
+      totalLinhas++;
+    });
+  });
+
+  if (btn) btn.innerHTML = `<span style="font-size:16px;">✅</span> Importado!`;
+  if (statusEl) {
+    statusEl.innerHTML = `✅ <strong>${totalLinhas}</strong> cliente(s) importados`;
+    statusEl.style.color = 'var(--green)';
+  }
+  if (activeSeller) openDashboard(activeSeller);
+  const sellersGrid = document.getElementById('sellersGrid');
+  if (sellersGrid) buildSellersGrid();
+}
+
+document.getElementById('btnExportCSV') && document.getElementById('btnExportCSV').addEventListener('click', exportConsolidatedCSV);
+
+function exportConsolidatedCSV() {
+  // Verifica se há dados carregados
+  const totalRows = sellers.reduce((acc, s) => acc + (csvData[s.csvName] || []).length, 0);
+  if (totalRows === 0) {
+    alert('Nenhum dado carregado. Importe o CSV primeiro.');
+    return;
+  }
+
+  // Data e hora atual formatada
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const dataStr = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+  // Cabeçalho: VENDEDOR + todas as colunas dos painéis (pelo label) + DATA
+  const headers = ['VENDEDOR', ...DISPLAY_COLS.map(c => c.label), 'DATA'];
+
+  const lines = [headers.join(';')];
+
+  allSellers.forEach(s => {
+    const rows = csvData[s.csvName] || [];
+    rows.forEach(row => {
+      // Recalcula VENDA automaticamente pelo FATURAMENTO
+      const fat = parseFloat(String(row['FATURAMENTO'] || '0').replace(',','.')) || 0;
+      row['VENDA'] = fat > 0 ? 'SIM' : 'NÃO';
+
+      // Grupo Comercial sem casa decimal
+      const grpRaw = row['GRUPO_  COMERCIAL'] || '';
+      const grpN   = parseFloat(grpRaw.replace(',','.'));
+      const grpVal = isNaN(grpN) ? grpRaw : Math.round(grpN).toString();
+
+      const cols = [
+        csvEsc(s.name),
+        ...DISPLAY_COLS.map(col => {
+          if (col.key === 'GRUPO_  COMERCIAL') return csvEsc(grpVal);
+          return csvEsc(row[col.key] || '');
+        }),
+        csvEsc(dataStr),
+      ];
+      lines.push(cols.join(';'));
+    });
+  });
+
+  const bom     = '\uFEFF';   // BOM para Excel reconhecer UTF-8
+  const content = bom + lines.join('\r\n');
+  const blob    = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement('a');
+  const fileName = `PMG_CONSOLIDADO_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}.csv`;
+  a.href = url; a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function csvEsc(v) {
+  const s = String(v === null || v === undefined ? '' : v);
+  // Encapsula em aspas se contiver ; " ou quebra de linha
+  if (s.includes(';') || s.includes('"') || s.includes('\n')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+// ─────────────────────────────────────────────
+// BOTÕES SIM / NÃO — EM CONTATO + DIAS CONTATO
+// ─────────────────────────────────────────────
+function onContatoBtn(btn) {
+  const realIdx = +btn.dataset.rowidx;
+  const row     = filteredRows[realIdx];
+  if (!row) return;
+
+  const hoje = new Date().getDate();
+  const diasAtual = (row['DIAS_CONTATO'] || '').trim();
+  const lista = diasAtual ? diasAtual.split(/[;,]/).map(d => d.trim()).filter(Boolean) : [];
+  const jaTemHoje = lista.includes(String(hoje));
+
+  if (jaTemHoje) {
+    row['DIAS_CONTATO'] = lista.filter(d => d !== String(hoje)).join(';');
+    row['EM CONTATO']   = lista.length > 1 ? 'SIM' : '';
+  } else {
+    lista.push(String(hoje));
+    lista.sort((a,b) => +a - +b);
+    row['DIAS_CONTATO'] = lista.join(';');
+    row['EM CONTATO']   = 'SIM';
+  }
+
+  // Preserva scroll e re-renderiza para garantir estado correto
+  const tableScroll = document.querySelector('.table-scroll');
+  const scrollLeft  = tableScroll ? tableScroll.scrollLeft : 0;
+  const scrollTop   = tableScroll ? tableScroll.scrollTop  : 0;
+  renderTable();
+  requestAnimationFrame(() => {
+    const ts = document.querySelector('.table-scroll');
+    if (ts) { ts.scrollLeft = scrollLeft; ts.scrollTop = scrollTop; }
+  });
+
+  renderStats(filteredRows.length > 0 ? filteredRows : activeRows);
+  scheduleSave();
+}
+
+// ─────────────────────────────────────────────
+// PERSISTÊNCIA — localStorage por vendedor
+// Campos salvos: os preenchimentos manuais do vendedor
+// ─────────────────────────────────────────────
+
+// Campos que o vendedor preenche manualmente (persistidos)
+const PERSIST_FIELDS = [
+  'CARTEIRA', 'EM CONTATO', 'DIAS_CONTATO', 'NÃO VENDA',
+  'MOTIVO (NÃO VENDA)', 'OBSERVAÇÕES (PREENCHIMENTO LIVRE)',
+  'WHATSAPP', 'VENDA', '_isNew', '_fromDiario', '_newSaved',
+  'NOME_GC', 'CLUSTER', 'ESTADO', 'GRUPO_  COMERCIAL'
+];
+
+function saveSellerData(sellerCsvName) {
+  if (!sellerCsvName) return;
+  try {
+    const rows = csvData[sellerCsvName] || [];
+    const payload = rows.map(row => {
+      const grpRaw = (row['GRUPO_  COMERCIAL'] || '').trim();
+      const grpN   = parseFloat(grpRaw.replace(',','.'));
+      const codGC  = isNaN(grpN) ? grpRaw : String(Math.round(grpN));
+      const estado = (row['ESTADO'] || '').trim();
+      const entry  = { _codGC: codGC, _estado: estado };
+      PERSIST_FIELDS.forEach(f => { if (row[f] !== undefined) entry[f] = row[f]; });
+      return entry;
+    });
+    localStorage.setItem('pmg2_' + sellerCsvName, JSON.stringify(payload));
+  } catch(e) { console.warn('localStorage save error:', e); }
+}
+
+function loadSellerData(sellerCsvName) {
+  try {
+    const raw = localStorage.getItem('pmg2_' + sellerCsvName);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch(e) { return null; }
+}
+
+function mergePersistedData(sellerCsvName) {
+  const saved = loadSellerData(sellerCsvName);
+  if (!saved || !saved.length) return false;
+
+  const rows = csvData[sellerCsvName];
+  if (!rows) return;
+
+  // Cria mapa de codGC|estado → dados salvos
+  const savedMap = {};
+  saved.forEach(s => {
+    if (s._codGC) {
+      const key = s._codGC + '|' + (s._estado || '');
+      savedMap[key] = s;
+    }
+  });
+
+  // Aplica preenchimentos salvos nas linhas existentes (do CSV base)
+  rows.forEach(row => {
+    const grpRaw = (row['GRUPO_  COMERCIAL'] || '').trim();
+    const grpN   = parseFloat(grpRaw.replace(',','.'));
+    const codGC  = isNaN(grpN) ? grpRaw : String(Math.round(grpN));
+    const estado = (row['ESTADO'] || '').trim();
+    const saved  = savedMap[codGC + '|' + estado];
+    if (saved) {
+      PERSIST_FIELDS.forEach(f => {
+        if (f === 'GRUPO_  COMERCIAL' || f === '_isNew' || f === '_fromDiario') return;
+        if (saved[f] !== undefined) {
+          if (f === 'DIAS_CONTATO') {
+            row[f] = _cleanDias(saved[f]);
+          } else {
+            row[f] = saved[f];
+          }
+        }
+      });
+    }
+  });
+
+  // Restaura linhas novas (adicionadas manualmente ou do diário) que não estão no CSV base
+  const existingCods = new Set(rows.map(row => {
+    const grpRaw = (row['GRUPO_  COMERCIAL'] || '').trim();
+    const grpN   = parseFloat(grpRaw.replace(',','.'));
+    return isNaN(grpN) ? grpRaw : String(Math.round(grpN));
+  }));
+
+  saved.forEach(s => {
+    if (!s._codGC || existingCods.has(s._codGC)) return;
+    // Só restaura linhas adicionadas manualmente (_isNew)
+    // Linhas _fromDiario serão recriadas pelo parseDiario ao importar o CSV
+    if (!s._isNew) return;
+    const newRow = {};
+    DISPLAY_COLS.forEach(col => { newRow[col.key] = ''; });
+    PERSIST_FIELDS.forEach(f => { if (s[f] !== undefined) newRow[f] = s[f]; });
+    newRow['GRUPO_  COMERCIAL'] = s._codGC;
+    rows.push(newRow);
+  });
+  return true;
+}
+
+// Auto-save com debounce (evita salvar a cada tecla)
+let saveTimer = null;
+let activeSeller = null;  // vendedor logado atualmente
+
+function saveNewRow(realIdx) {
+  const row = filteredRows[realIdx];
+  if (!row || !row._isNew) return;
+  row._newSaved = true;
+  renderTable();
+  scheduleSave();
+}
+
+function editNewRow(realIdx) {
+  const row = filteredRows[realIdx];
+  if (!row || !row._isNew) return;
+  row._newSaved = false;
+  renderTable();
+}
+
+function deleteNewRow(realIdx) {
+  const row = filteredRows[realIdx];
+  if (!row || !row._isNew) return;
+  // Remove do csvData
+  const arr = csvData[activeSeller.csvName];
+  const idx = arr.indexOf(row);
+  if (idx >= 0) arr.splice(idx, 1);
+  // Remove de activeRows e filteredRows
+  activeRows = activeRows.filter(r => r !== row);
+  filteredRows = filteredRows.filter(r => r !== row);
+  renderTable();
+  renderStats(filteredRows.length > 0 ? filteredRows : activeRows);
+  scheduleSave();
+}
+
+function applySheetsJson() {
+  const input    = document.getElementById('sheetsJsonInput');
+  const statusEl = document.getElementById('painelStatus');
+  const btn      = document.getElementById('btnImportSheets');
+  if (!input || !input.value.trim()) {
+    if (statusEl) { statusEl.textContent = '⚠ Cole o JSON antes de aplicar.'; statusEl.style.color = 'var(--red)'; }
+    return;
+  }
+  try {
+    const text     = input.value.trim();
+    const jsonStart = text.indexOf('{');
+    const jsonEnd   = text.lastIndexOf('}');
+    const data     = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
+    if (data.status !== 'ok' || !data.vendedores) throw new Error(data.msg || 'JSON inválido');
+
+    // Reutiliza a lógica de processamento do runImportSheets
+    // Simula resposta do fetch para reutilizar o processamento
+    const fakeBtn = { innerHTML: '', style: {} };
+    _processSheetsData(data, btn, statusEl);
+
+    document.getElementById('sheetsJsonArea').style.display = 'none';
+    input.value = '';
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = '⚠ JSON inválido: ' + e.message; statusEl.style.color = 'var(--red)'; }
+  }
+}
+
+function togglePrioridade() {
+  if (activeFilters.has('__PRIORIDADE__')) {
+    activeFilters.delete('__PRIORIDADE__');
+    if (activeFilters.size === 0) activeFilters.add('TODOS');
+  } else {
+    activeFilters.delete('TODOS');
+    activeFilters.add('__PRIORIDADE__');
+  }
+  currentPage = 1;
+  applyFilters();
+  renderTable();
+}
+
+function scheduleSave() {
+  if (!activeSeller) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveSellerData(activeSeller.csvName), 800);
+}
+
+// ─────────────────────────────────────────────
+// SALVAR PAINEL DO VENDEDOR — Google Sheets
+// ─────────────────────────────────────────────
+
+const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxoka851kPxqARwjGxyE59orqSCM-YfkZD0KKanjsxGoZYqLpG-_-2tcxc7nPg-kjsN/exec';
+
+document.getElementById('btnVendedorSalvar').addEventListener('click', async () => {
+  if (!activeSeller) return;
+
+  const btn = document.getElementById('btnVendedorSalvar');
+  btn.innerHTML = `⏳ Enviando...`;
+  btn.style.pointerEvents = 'none';
+
+  try {
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const hoje = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}`;
+    const dateFmt = `${hoje} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    // Filtra apenas linhas com GRUPO COMERCIAL preenchido
+    const filledRows = activeRows.filter(row => (row['GRUPO_  COMERCIAL'] || '').trim() !== '');
+
+    // Salva no localStorage
+    saveSellerData(activeSeller.csvName);
+
+    if (!SHEETS_WEBHOOK_URL || SHEETS_WEBHOOK_URL.trim() === '') {
+      btn.innerHTML = `⚠ URL não configurada`;
+    } else if (filledRows.length === 0) {
+      btn.innerHTML = `✅ Sem dados`;
+    } else {
+      const rowsToSend = filledRows;
+
+      // Envia TODOS os dados em uma única requisição POST via form+iframe
+      // (sem limite de tamanho, funciona com no-cors de qualquer origem)
+      const allData = {
+        v:    activeSeller.name,
+        d:    dateFmt,
+        rows: rowsToSend.map(r => {
+          const grpRaw  = (r['GRUPO_  COMERCIAL']||'').trim();
+          const grpN    = parseFloat(grpRaw.replace(',','.'));
+          const grp     = isNaN(grpN) ? grpRaw : String(Math.round(grpN));
+          const fatN    = parseFloat((r['FATURAMENTO']||'0').replace(',','.')) || 0;
+          const metaN   = parseFloat((r['META FAT']||'0').replace(',','.')) || 0;
+          const metaPosit = activeSeller ? (sellerMetaPosit[activeSeller.csvName] || 0) : 0;
+          const rowStr = [
+            grp,
+            (r['NOME_GC']||''),
+            (r['ESTADO']||''),
+            (r['CLUSTER']||''),
+            (r['CARTEIRA']||''),
+            (r['EM CONTATO']||''),
+            (r['DIAS_CONTATO']||'').replace(/[;,]/g,'-'),
+            (r['NÃO VENDA']||''),
+            (r['MOTIVO (NÃO VENDA)']||''),
+            (r['OBSERVAÇÕES (PREENCHIMENTO LIVRE)']||'').substring(0,200),
+            Math.round(fatN).toString(),
+            Math.round(metaN).toString(),
+            (r['DIAS_VENDA']||'').replace(/[;,]/g,'-'),
+            (r['FREQUENCIA']||'0'),
+            (r['POSITIVAÇÃO']||'0'),
+            Math.round(metaPosit).toString(),
+          ].join('|');
+          return rowStr;
+        }).join('§')
+      };
+
+      // Envia via fetch com mode:'no-cors' — sem limite de tamanho via POST body
+      // no-cors não retorna resposta legível, mas o servidor recebe os dados
+      const formData = new FormData();
+      Object.entries(allData).forEach(([k,v]) => formData.append(k, v));
+
+      fetch(SHEETS_WEBHOOK_URL, { method: 'POST', mode: 'no-cors', body: formData })
+        .catch(() => {}); // ignora erro de CORS — dados foram enviados
+
+      // Aguarda ~2s e assume sucesso
+      setTimeout(() => {
+        btn.innerHTML = `✅ ${rowsToSend.length} linha(s) enviada(s)`;
+        btn.style.pointerEvents = '';
+        // Salva timestamp do último envio
+        const now2 = new Date();
+        const pad2 = n => String(n).padStart(2,'0');
+        const ts = `${pad2(now2.getDate())}/${pad2(now2.getMonth()+1)}/${now2.getFullYear()} ${pad2(now2.getHours())}:${pad2(now2.getMinutes())}`;
+        const lbl = document.getElementById('lastSaveLabel');
+        if (lbl) lbl.textContent = `Último envio: ${ts}`;
+        if (activeSeller) localStorage.setItem('pmg_lastSave_' + activeSeller.name, ts);
+        setTimeout(() => { btn.innerHTML = `💾 Salvar`; }, 3000);
+      }, 2000);
+      btn.innerHTML = `⏳ Enviando ${rowsToSend.length} linhas...`;
+      return;
+    }
+
+  } catch(e) {
+    console.error(e);
+    btn.innerHTML = `⚠ Erro`;
+    alert('Erro ao enviar: ' + e.message);
+  } finally {
+    btn.style.pointerEvents = '';
+    setTimeout(() => { btn.innerHTML = `💾 Salvar`; }, 3000);
+  }
+});
+
+const _btnVE = document.getElementById('btnVendedorEmail');
+if (_btnVE) _btnVE.addEventListener('click', exportVendedorEmail);
+
+function exportVendedorEmail() {
+  if (!activeSeller) return;
+  const rows = activeRows;
+  if (rows.length === 0) { alert('Nenhum dado para exportar.'); return; }
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const data = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}`;
+  const dateLabel = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+
+  const headers = ['VENDEDOR', ...DISPLAY_COLS.map(c => c.label), 'DATA'];
+  const lines   = [headers.join(';')];
+
+  rows.forEach(row => {
+    const fat = parseFloat(String(row['FATURAMENTO']||'0').replace(',','.')) || 0;
+    row['VENDA'] = fat > 0 ? 'SIM' : 'NÃO';
+    const grpRaw = row['GRUPO_  COMERCIAL'] || '';
+    const grpN   = parseFloat(grpRaw.replace(',','.'));
+    const grpVal = isNaN(grpN) ? grpRaw : Math.round(grpN).toString();
+    const cols = [
+      csvEsc(activeSeller.name),
+      ...DISPLAY_COLS.map(col => {
+        if (col.key === 'GRUPO_  COMERCIAL') return csvEsc(grpVal);
+        return csvEsc(row[col.key] || '');
+      }),
+      csvEsc(data),
+    ];
+    lines.push(cols.join(';'));
+  });
+
+  const bom      = '\uFEFF';
+  const content  = bom + lines.join('\r\n');
+  const blob     = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  const url      = URL.createObjectURL(blob);
+  const fileName = `PMG3_${activeSeller.name}_${dateLabel}.csv`;
+  const a        = document.createElement('a');
+  a.href = url; a.download = fileName;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  // Salva imediatamente ao sair
+  if (activeSeller) saveSellerData(activeSeller.csvName);
+  activeSeller = null;
+  document.getElementById('dashboard').classList.remove('active');
+  searchTerm=''; activeFilters=new Set(['TODOS']); currentPage=1;
+});
+
+// ── ATIVAÇÃO MODO PAINEL (deve ser o último código a rodar) ──
+if (window.__PMG_IS_PAINEL__) {
+  // Usa setTimeout(0) para garantir que o DOM está 100% disponível
+  setTimeout(activatePainelMode, 0);
+
+  // Lembrete de salvar às 12:00 e 17:00
+  (function() {
+    let lastAlertKey = '';
+    setInterval(() => {
+      const now  = new Date();
+      const h    = now.getHours();
+      const m    = now.getMinutes();
+      const key  = `${now.toDateString()}-${h}`;
+      if ((h === 12 || h === 17) && m === 0 && key !== lastAlertKey) {
+        lastAlertKey = key;
+        // Mostra popup de lembrete
+        const overlay = document.createElement('div');
+        overlay.id = '__saveReminderOverlay__';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,20,60,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+        overlay.innerHTML = `
+          <div style="background:#fff;border-radius:16px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(10,20,60,.3);overflow:hidden;animation:modalIn .3s ease;">
+            <div style="background:linear-gradient(135deg,#1a3fa8,#d42b2b);padding:20px 24px;text-align:center;">
+              <div style="font-size:36px;margin-bottom:6px;">💾</div>
+              <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:16px;color:#fff;letter-spacing:1px;">LEMBRETE DE SALVAMENTO</div>
+              <div style="font-family:'Montserrat',sans-serif;font-size:11px;color:rgba(255,255,255,.8);margin-top:4px;">${h === 12 ? '12:00' : '17:00'} — Hora de registrar seus contatos</div>
+            </div>
+            <div style="padding:20px 24px;text-align:center;">
+              <p style="font-family:'Montserrat',sans-serif;font-size:13px;color:#3a4a7a;line-height:1.6;margin:0 0 16px;">
+                Não esqueça de clicar em <strong>💾 Salvar</strong> para registrar todos os contatos e atualizações do dia no Google Sheets.
+              </p>
+              <button onclick="document.getElementById('__saveReminderOverlay__').remove()" style="background:linear-gradient(135deg,#1a3fa8,#0f2d7a);border:none;border-radius:8px;padding:12px 28px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;color:#fff;cursor:pointer;width:100%;">ENTENDIDO</button>
+            </div>
+          </div>`;
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+      }
+    }, 30000); // verifica a cada 30s
+  })();
+}
+</script>
+</body>
+</html>
