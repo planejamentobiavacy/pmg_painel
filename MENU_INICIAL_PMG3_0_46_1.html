@@ -1295,6 +1295,12 @@ function parseCSV(text) {
   const lines = text.split('\n').map(l => l.replace(/\r/g,'').trim()).filter(l => l);
   if (lines.length < 2) { alert('CSV vazio ou inválido.'); return; }
 
+  // Limpa cache do localStorage automaticamente ao importar novo CSV base
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i);
+    if (k && (k.startsWith('pmg2_') || k.startsWith('pmg_lastSave_'))) localStorage.removeItem(k);
+  }
+
   const headers = splitLine(lines[0], delim);
 
   // Reset
