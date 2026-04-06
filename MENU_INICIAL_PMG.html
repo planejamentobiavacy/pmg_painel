@@ -2235,7 +2235,8 @@ function limparCacheVendedor() {
   keys.forEach(k => localStorage.removeItem(k));
   // Limpa campos na memória
   (csvData[activeSeller.csvName] || []).forEach(row => {
-    ['EM CONTATO','DIAS_CONTATO','NÃO VENDA','MOTIVO (NÃO VENDA)','OBSERVAÇÕES (PREENCHIMENTO LIVRE)','CARTEIRA','WHATSAPP','VENDA'].forEach(f => { if (row[f] !== undefined) row[f] = ''; });
+    ['EM CONTATO','DIAS_CONTATO','NÃO VENDA','MOTIVO (NÃO VENDA)','OBSERVAÇÕES (PREENCHIMENTO LIVRE)','WHATSAPP','VENDA'].forEach(f => { if (row[f] !== undefined) row[f] = ''; });
+    if (row['CARTEIRA'] !== 'NÃO') row['CARTEIRA'] = 'SIM';
   });
   const banner = document.getElementById('cacheWarningBanner');
   if (banner) banner.style.display = 'none';
@@ -2258,7 +2259,8 @@ document.getElementById('btnLimparCache').addEventListener('click', () => {
   keysFound.forEach(k => localStorage.removeItem(k));
   allSellers.forEach(s => {
     (csvData[s.csvName] || []).forEach(row => {
-      ['EM CONTATO','DIAS_CONTATO','NÃO VENDA','MOTIVO (NÃO VENDA)','OBSERVAÇÕES (PREENCHIMENTO LIVRE)','CARTEIRA','WHATSAPP','VENDA'].forEach(f => { if (row[f] !== undefined) row[f] = ''; });
+      ['EM CONTATO','DIAS_CONTATO','NÃO VENDA','MOTIVO (NÃO VENDA)','OBSERVAÇÕES (PREENCHIMENTO LIVRE)','WHATSAPP','VENDA'].forEach(f => { if (row[f] !== undefined) row[f] = ''; });
+      if (row['CARTEIRA'] !== 'NÃO') row['CARTEIRA'] = 'SIM';
     });
   });
   renderTable();
