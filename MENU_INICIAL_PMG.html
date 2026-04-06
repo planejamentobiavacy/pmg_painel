@@ -2863,10 +2863,10 @@ document.getElementById('btnVendedorSalvar').addEventListener('click', async () 
         }).join('§')
       };
 
-      // Guarda payload no sessionStorage e recarrega a página (hard reload)
-      // Após o reload, o código detecta o payload pendente e envia automaticamente
+      // Guarda payload e vendedor ativo no sessionStorage e recarrega (hard reload)
       try {
         sessionStorage.setItem('pmg_pending_save', JSON.stringify(allData));
+        sessionStorage.setItem('pmg_pending_seller', activeSeller.csvName);
       } catch(ex) { console.warn('sessionStorage error', ex); }
 
       btn.innerHTML = `⏳ Preparando...`;
@@ -2978,34 +2978,51 @@ if (window.__PMG_IS_PAINEL__) {
 }
 
 // ── ENVIO PENDENTE APÓS HARD RELOAD ──────────────────────────
-// Se há um payload salvo no sessionStorage (gravado antes do reload), envia agora
 (function() {
-  const raw = sessionStorage.getItem('pmg_pending_save');
-  if (!raw) return;
+  const raw        = sessionStorage.getItem('pmg_pending_save');
+  const sellerName = sessionStorage.getItem('pmg_pending_seller');
+  if (!raw || !sellerName) return;
   sessionStorage.removeItem('pmg_pending_save');
-  try {
-    const allData = JSON.parse(raw);
-    const formData = new FormData();
-    Object.entries(allData).forEach(([k,v]) => formData.append(k, v));
-    fetch(SHEETS_WEBHOOK_URL, { method: 'POST', mode: 'no-cors', body: formData })
-      .catch(() => {});
-    // Mostra feedback visual no botão salvar se existir
-    const btn = document.getElementById('btnVendedorSalvar');
-    if (btn) {
-      const total = allData.rows ? allData.rows.split('§').filter(r=>r.trim()).length : 0;
-      btn.innerHTML = `⏳ Enviando ${total} linhas...`;
-      setTimeout(() => {
-        btn.innerHTML = `✅ Salvo!`;
-        const now2 = new Date();
-        const pad2 = n => String(n).padStart(2,'0');
-        const ts = `${pad2(now2.getDate())}/${pad2(now2.getMonth()+1)}/${now2.getFullYear()} ${pad2(now2.getHours())}:${pad2(now2.getMinutes())}`;
-        const lbl = document.getElementById('lastSaveLabel');
-        if (lbl) lbl.textContent = `Último envio: ${ts}`;
-        if (activeSeller) localStorage.setItem('pmg_lastSave_' + activeSeller.name, ts);
-        setTimeout(() => { if (btn) btn.innerHTML = `💾 Salvar`; }, 3000);
-      }, 2000);
+  sessionStorage.removeItem('pmg_pending_seller');
+
+  // Aguarda o DOM e os dados estarem prontos, depois reabre o dashboard e envia
+  function tryAutoSave(attempt) {
+    const seller = allSellers.find(s => s.csvName === sellerName);
+    if (!seller) {
+      if (attempt < 20) setTimeout(() => tryAutoSave(attempt + 1), 200);
+      return;
     }
-  } catch(ex) { console.warn('pending save error', ex); }
+    // Reabre o dashboard do vendedor sem pedir senha (já estava logado)
+    if (typeof openDashboard === 'function') openDashboard(seller);
+
+    try {
+      const allData  = JSON.parse(raw);
+      const formData = new FormData();
+      Object.entries(allData).forEach(([k,v]) => formData.append(k, v));
+      fetch(SHEETS_WEBHOOK_URL, { method: 'POST', mode: 'no-cors', body: formData })
+        .catch(() => {});
+
+      const btn = document.getElementById('btnVendedorSalvar');
+      if (btn) {
+        const total = allData.rows ? allData.rows.split('§').filter(r => r.trim()).length : 0;
+        btn.innerHTML = `⏳ Enviando ${total} linhas...`;
+        btn.style.pointerEvents = 'none';
+        setTimeout(() => {
+          btn.innerHTML = `✅ Salvo!`;
+          btn.style.pointerEvents = '';
+          const now2 = new Date();
+          const pad2 = n => String(n).padStart(2,'0');
+          const ts = `${pad2(now2.getDate())}/${pad2(now2.getMonth()+1)}/${now2.getFullYear()} ${pad2(now2.getHours())}:${pad2(now2.getMinutes())}`;
+          const lbl = document.getElementById('lastSaveLabel');
+          if (lbl) lbl.textContent = `Último envio: ${ts}`;
+          if (activeSeller) localStorage.setItem('pmg_lastSave_' + activeSeller.name, ts);
+          setTimeout(() => { if (btn) btn.innerHTML = `💾 Salvar`; }, 3000);
+        }, 2000);
+      }
+    } catch(ex) { console.warn('pending save error', ex); }
+  }
+
+  setTimeout(() => tryAutoSave(0), 800);
 })();
 </script>
 </body>
