@@ -1422,6 +1422,8 @@ let filteredRows  = [];
 let currentPage   = 1;
 let searchTerm    = '';
 let activeFilters = new Set(['TODOS']); // suporta múltiplos filtros simultâneos
+let sortCol       = null;  // key da coluna de ordenação
+let sortDir       = 1;     // 1 = crescente, -1 = decrescente
 let activeClusters = [];           // ← stored globally so renderTable never needs a param
 const PAGE_SIZE   = 25;
 
@@ -1600,7 +1602,12 @@ function renderTable() {
 
   DISPLAY_COLS.forEach((c, ci) => {
     const frozenCls = FROZEN_KEYS.includes(c.key) ? ` col-frozen-${FROZEN_KEYS.indexOf(c.key)}` : '';
-    html += `<th class="${frozenCls}">${c.label}</th>`;
+    const isSort    = sortCol === c.key;
+    const arrow     = isSort ? (sortDir === 1 ? ' ▲' : ' ▼') : ' ⇅';
+    const arrowStyle = isSort ? 'color:#fff;' : 'color:rgba(255,255,255,.35);font-size:10px;';
+    html += `<th class="${frozenCls}" style="cursor:pointer;user-select:none;white-space:nowrap;" onclick="setSort('${c.key.replace(/'/g,"\\'")}')">
+      ${c.label}<span style="${arrowStyle}">${arrow}</span>
+    </th>`;
   });
   html += `</tr></thead><tbody>`;
 
@@ -2027,9 +2034,33 @@ function applyFilters() {
     return filtersOk && searchOk;
   });
 
+  // Aplica ordenação se houver coluna selecionada
+  if (sortCol) {
+    filteredRows.sort((a, b) => {
+      const av = (a[sortCol] || '');
+      const bv = (b[sortCol] || '');
+      const an = parseFloat(String(av).replace(',','.'));
+      const bn = parseFloat(String(bv).replace(',','.'));
+      if (!isNaN(an) && !isNaN(bn)) return (an - bn) * sortDir;
+      return String(av).localeCompare(String(bv), 'pt-BR') * sortDir;
+    });
+  }
+
   const el = document.getElementById('dashClientCount');
   if (el) el.textContent = filteredRows.length + ' cliente(s)';
   renderStats(filteredRows);
+}
+
+function setSort(key) {
+  if (sortCol === key) {
+    sortDir = sortDir === 1 ? -1 : 1;
+  } else {
+    sortCol = key;
+    sortDir = 1;
+  }
+  currentPage = 1;
+  applyFilters();
+  renderTable();
 }
 
 // helpers
