@@ -1295,6 +1295,12 @@ function parseCSV(text) {
   const lines = text.split('\n').map(l => l.replace(/\r/g,'').trim()).filter(l => l);
   if (lines.length < 2) { alert('CSV vazio ou inválido.'); return; }
 
+  // Limpa cache do localStorage automaticamente ao importar novo CSV base
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i);
+    if (k && (k.startsWith('pmg2_') || k.startsWith('pmg_lastSave_'))) localStorage.removeItem(k);
+  }
+
   const headers = splitLine(lines[0], delim);
 
   // Reset
@@ -1509,11 +1515,13 @@ function renderStats(rows) {
   const metaVendedor = metaFiltrada > 0 ? metaFiltrada : (activeSeller ? (sellerMeta[activeSeller.csvName] || 0) : 0);
   const pctMeta   = metaVendedor > 0 ? Math.round((fatTotal/metaVendedor)*100) : 0;
   const fatFmt    = fatTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0});
+  const metaFmt   = metaVendedor > 0 ? metaVendedor.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0}) : null;
   const pctColor  = pctMeta>=100?'#0c7a42':pctMeta>=70?'#f0a500':'#d42b2b';
 
   // Positivação % meta usando META POSIT das linhas filtradas
   const metaPositFiltrada  = rows.reduce((acc,r) => acc+(parseFloat(String(r['META POSIT']||'0').replace(',','.')) || 0), 0);
   const metaPositVendedor  = metaPositFiltrada > 0 ? metaPositFiltrada : (activeSeller ? (sellerMetaPosit[activeSeller.csvName] || 0) : 0);
+  const metaPositFmt = metaPositVendedor > 0 ? metaPositVendedor.toLocaleString('pt-BR') + ' clientes' : null;
   const pctPosit   = metaPositVendedor > 0 ? Math.round((positTotal/metaPositVendedor)*100) : (carteiraSim > 0 ? Math.round((positTotal/carteiraSim)*100) : 0);
   const pctPositColor = pctPosit>=100?'#0c7a42':pctPosit>=70?'#f0a500':'#d42b2b';
 
@@ -1531,11 +1539,13 @@ function renderStats(rows) {
     <div class="stat-card"><div class="stat-icon green">💰</div><div class="stat-info">
       <div class="stat-value" style="font-size:16px;line-height:1.2;">${fatFmt}</div>
       <div style="font-size:12px;font-weight:700;color:${pctColor};margin-top:2px;">${pctMeta}% da meta</div>
+      ${metaFmt ? `<div style="font-size:11px;font-weight:600;color:var(--text-light);margin-top:1px;">Meta: ${metaFmt}</div>` : ''}
       <div class="stat-label">Faturamento</div>
     </div></div>
     <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info">
       <div class="stat-value">${positTotal}</div>
-      <div style="font-size:12px;font-weight:700;color:${pctPositColor};margin-top:2px;">${pctPosit}% da carteira</div>
+      <div style="font-size:12px;font-weight:700;color:${pctPositColor};margin-top:2px;">${pctPosit}% da meta</div>
+      ${metaPositFmt ? `<div style="font-size:11px;font-weight:600;color:var(--text-light);margin-top:1px;">Meta: ${metaPositFmt}</div>` : ''}
       <div class="stat-label">Positivação</div>
     </div></div>
     <div class="stat-card"><div class="stat-icon orange">📞</div><div class="stat-info"><div class="stat-value">${contatosHoje}</div><div class="stat-label">Contatos do Dia</div></div></div>
