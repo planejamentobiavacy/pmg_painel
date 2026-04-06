@@ -2037,8 +2037,32 @@ function applyFilters() {
   // Aplica ordenação se houver coluna selecionada
   if (sortCol) {
     filteredRows.sort((a, b) => {
-      const av = (a[sortCol] || '');
-      const bv = (b[sortCol] || '');
+      let av = (a[sortCol] || '');
+      let bv = (b[sortCol] || '');
+
+      // DIAS S/ VENDA (DT_ULT_COMPRA) — converte data para dias
+      if (sortCol === 'DT_ULT_COMPRA') {
+        const toDias = (row) => {
+          const gc = (() => { const g=(row['GRUPO_  COMERCIAL']||'').trim(); const n=parseFloat(g.replace(',','.')); return isNaN(n)?g:String(Math.round(n)); })();
+          const entries = ultComprasData[gc];
+          const dtStr = entries && entries.length > 0 ? entries[0].ultData : (row['DT_ULT_COMPRA'] || '');
+          if (!dtStr) return -1;
+          let dtObj;
+          if (dtStr.includes('/')) { const p=dtStr.split('/'); dtObj=new Date(+p[2],+p[1]-1,+p[0]); }
+          else { dtObj=new Date(dtStr); }
+          if (isNaN(dtObj.getTime())) return -1;
+          return Math.floor((Date.now() - dtObj.getTime()) / 86400000);
+        };
+        return (toDias(a) - toDias(b)) * sortDir;
+      }
+
+      // Colunas com dias separados por ; ou , — ordena pela quantidade
+      if (sortCol === 'DIAS_VENDA' || sortCol === 'DIAS_CONTATO') {
+        const an = av ? av.split(/[;,]/).filter(Boolean).length : 0;
+        const bn = bv ? bv.split(/[;,]/).filter(Boolean).length : 0;
+        return (an - bn) * sortDir;
+      }
+
       const an = parseFloat(String(av).replace(',','.'));
       const bn = parseFloat(String(bv).replace(',','.'));
       if (!isNaN(an) && !isNaN(bn)) return (an - bn) * sortDir;
