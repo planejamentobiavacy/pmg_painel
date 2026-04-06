@@ -2863,28 +2863,14 @@ document.getElementById('btnVendedorSalvar').addEventListener('click', async () 
         }).join('§')
       };
 
-      // Envia via fetch com mode:'no-cors' — sem limite de tamanho via POST body
-      // no-cors não retorna resposta legível, mas o servidor recebe os dados
-      const formData = new FormData();
-      Object.entries(allData).forEach(([k,v]) => formData.append(k, v));
+      // Guarda payload no sessionStorage e recarrega a página (hard reload)
+      // Após o reload, o código detecta o payload pendente e envia automaticamente
+      try {
+        sessionStorage.setItem('pmg_pending_save', JSON.stringify(allData));
+      } catch(ex) { console.warn('sessionStorage error', ex); }
 
-      fetch(SHEETS_WEBHOOK_URL, { method: 'POST', mode: 'no-cors', body: formData })
-        .catch(() => {}); // ignora erro de CORS — dados foram enviados
-
-      // Aguarda ~2s e assume sucesso
-      setTimeout(() => {
-        btn.innerHTML = `✅ ${rowsToSend.length} linha(s) enviada(s)`;
-        btn.style.pointerEvents = '';
-        // Salva timestamp do último envio
-        const now2 = new Date();
-        const pad2 = n => String(n).padStart(2,'0');
-        const ts = `${pad2(now2.getDate())}/${pad2(now2.getMonth()+1)}/${now2.getFullYear()} ${pad2(now2.getHours())}:${pad2(now2.getMinutes())}`;
-        const lbl = document.getElementById('lastSaveLabel');
-        if (lbl) lbl.textContent = `Último envio: ${ts}`;
-        if (activeSeller) localStorage.setItem('pmg_lastSave_' + activeSeller.name, ts);
-        setTimeout(() => { btn.innerHTML = `💾 Salvar`; }, 3000);
-      }, 2000);
-      btn.innerHTML = `⏳ Enviando ${rowsToSend.length} linhas...`;
+      btn.innerHTML = `⏳ Preparando...`;
+      setTimeout(() => { location.reload(true); }, 500);
       return;
     }
 
@@ -2990,6 +2976,37 @@ if (window.__PMG_IS_PAINEL__) {
     }, 30000); // verifica a cada 30s
   })();
 }
+
+// ── ENVIO PENDENTE APÓS HARD RELOAD ──────────────────────────
+// Se há um payload salvo no sessionStorage (gravado antes do reload), envia agora
+(function() {
+  const raw = sessionStorage.getItem('pmg_pending_save');
+  if (!raw) return;
+  sessionStorage.removeItem('pmg_pending_save');
+  try {
+    const allData = JSON.parse(raw);
+    const formData = new FormData();
+    Object.entries(allData).forEach(([k,v]) => formData.append(k, v));
+    fetch(SHEETS_WEBHOOK_URL, { method: 'POST', mode: 'no-cors', body: formData })
+      .catch(() => {});
+    // Mostra feedback visual no botão salvar se existir
+    const btn = document.getElementById('btnVendedorSalvar');
+    if (btn) {
+      const total = allData.rows ? allData.rows.split('§').filter(r=>r.trim()).length : 0;
+      btn.innerHTML = `⏳ Enviando ${total} linhas...`;
+      setTimeout(() => {
+        btn.innerHTML = `✅ Salvo!`;
+        const now2 = new Date();
+        const pad2 = n => String(n).padStart(2,'0');
+        const ts = `${pad2(now2.getDate())}/${pad2(now2.getMonth()+1)}/${now2.getFullYear()} ${pad2(now2.getHours())}:${pad2(now2.getMinutes())}`;
+        const lbl = document.getElementById('lastSaveLabel');
+        if (lbl) lbl.textContent = `Último envio: ${ts}`;
+        if (activeSeller) localStorage.setItem('pmg_lastSave_' + activeSeller.name, ts);
+        setTimeout(() => { if (btn) btn.innerHTML = `💾 Salvar`; }, 3000);
+      }, 2000);
+    }
+  } catch(ex) { console.warn('pending save error', ex); }
+})();
 </script>
 </body>
 </html>
