@@ -556,8 +556,12 @@ const sellersDev = [
   { name:"KEULLY",  csvName:"KEULLY BIANCA",    password:"KEULLY154" },
 ];
 
+const sellersHava = [
+  { name:"SAMARA",  csvName:"SAMARA",            password:"SAMARA123" },
+];
+
 // Lista completa para processamento de CSV/dados
-const allSellers = [...sellers, ...sellersDev];
+const allSellers = [...sellers, ...sellersDev, ...sellersHava];
 
 // Colunas a exibir na tabela (legíveis)
 const DISPLAY_COLS = [
@@ -660,6 +664,24 @@ function buildSellersGrid() {
     card.innerHTML = `<div class="avatar">${s.name[0]}</div><div class="seller-name">${s.name}</div><button class="card-btn">ACESSAR</button>`;
     card.addEventListener('click', () => openModal(s));
     gridDev.appendChild(card);
+  });
+
+  // Seção Hava
+  const labelHava = document.createElement('p');
+  labelHava.className = 'section-label';
+  labelHava.style.marginTop = '32px';
+  labelHava.textContent = 'Hava';
+  grid.appendChild(labelHava);
+  const gridHava = document.createElement('div');
+  gridHava.className = 'cards-grid';
+  grid.appendChild(gridHava);
+  sellersHava.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'seller-card';
+    card.id = 'card-' + s.name;
+    card.innerHTML = `<div class="avatar">${s.name[0]}</div><div class="seller-name">${s.name}</div><button class="card-btn">ACESSAR</button>`;
+    card.addEventListener('click', () => openModal(s));
+    gridHava.appendChild(card);
   });
 
   return true;
