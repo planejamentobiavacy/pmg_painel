@@ -1604,7 +1604,7 @@ function renderTable() {
     const frozenCls = FROZEN_KEYS.includes(c.key) ? ` col-frozen-${FROZEN_KEYS.indexOf(c.key)}` : '';
     const isSort    = sortCol === c.key;
     const arrow     = isSort ? (sortDir === 1 ? ' ▲' : ' ▼') : ' ⇅';
-    const arrowStyle = isSort ? 'color:#fff;font-size:11px;' : 'color:rgba(255,255,255,.6);font-size:11px;';
+    const arrowStyle = isSort ? 'color:#fff;font-size:11px;' : 'color:#a0aec0;font-size:11px;';
     html += `<th class="${frozenCls}" style="cursor:pointer;user-select:none;white-space:nowrap;" onclick="setSort('${c.key.replace(/'/g,"\\'")}')">
       ${c.label}<span style="${arrowStyle}">${arrow}</span>
     </th>`;
