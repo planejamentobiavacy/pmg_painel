@@ -488,9 +488,14 @@
         <div class="dash-user-name"   id="dashName"></div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-        <button id="btnVendedorSalvar" style="display:inline-flex;align-items:center;gap:8px;background:rgba(16,145,80,.8);border:1.5px solid rgba(255,255,255,.4);border-radius:8px;padding:9px 18px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;transition:.2s;" title="Enviar dados para o Google Sheets">
-          💾 Salvar
-        </button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="btnAtualizarDiario" style="display:inline-flex;align-items:center;gap:6px;background:rgba(26,63,168,.7);border:1.5px solid rgba(255,255,255,.4);border-radius:8px;padding:9px 14px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;transition:.2s;" title="Buscar vendas atualizadas do Google Sheets">
+            🔄 Atualizar
+          </button>
+          <button id="btnVendedorSalvar" style="display:inline-flex;align-items:center;gap:8px;background:rgba(16,145,80,.8);border:1.5px solid rgba(255,255,255,.4);border-radius:8px;padding:9px 18px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;transition:.2s;" title="Enviar dados para o Google Sheets">
+            💾 Salvar
+          </button>
+        </div>
         <div id="lastSaveLabel" style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:600;color:rgba(255,255,255,.6);text-align:right;min-height:14px;"></div>
         <button id="btnDashImportSheets" style="display:none;" title="Importar preenchimentos do Google Sheets">
           📊 Importar G.Sheets
@@ -2452,6 +2457,140 @@ if (_btnIS) _btnIS.addEventListener('click', () => {
 });
 
 // Botão no dashboard (painel do vendedor — Netlify)
+// ── ATUALIZAR VENDA DIÁRIA VIA SHEETS (vendas_v1) ────────────
+document.getElementById('btnAtualizarDiario').addEventListener('click', () => {
+  fetchVendasV1();
+});
+
+async function fetchVendasV1() {
+  const btn = document.getElementById('btnAtualizarDiario');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⏳ Buscando...';
+  btn.style.pointerEvents = 'none';
+
+  try {
+    const url = SHEETS_WEBHOOK_URL + '?action=vendas_v1';
+    const resp = await fetch(url);
+    const text = await resp.text();
+    const jsonStart = text.indexOf('{');
+    const jsonEnd   = text.lastIndexOf('}');
+    if (jsonStart < 0 || jsonEnd < 0) throw new Error('Resposta inválida do servidor');
+    const data = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
+    if (data.status !== 'ok' || !data.rows) throw new Error(data.msg || 'Sem dados');
+
+    // Processa igual ao parseDiario mas com dados do Sheets
+    _applyVendasV1(data.rows);
+
+    btn.innerHTML = '✅ Atualizado!';
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const lbl = document.getElementById('lastSaveLabel');
+    if (lbl) lbl.textContent = `Atualizado: ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    setTimeout(() => { btn.innerHTML = orig; btn.style.pointerEvents = ''; }, 3000);
+
+  } catch(err) {
+    console.error('fetchVendasV1 erro:', err);
+    btn.innerHTML = '⚠ Erro';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.pointerEvents = ''; }, 3000);
+  }
+}
+
+function _applyVendasV1(rows) {
+  if (!activeSeller) return;
+
+  // Monta diarioMap igual ao parseDiario
+  const diarioMap = {};
+
+  rows.forEach(row => {
+    const codRaw  = String(row['COD_GC'] || '').trim();
+    const codNum  = parseFloat(codRaw.replace(',','.'));
+    const codGC   = !isNaN(codNum) ? String(Math.round(codNum)) : codRaw.replace(/^0+/,'') || codRaw;
+    const vendRaw = String(row['NOME_VENDEDOR'] || '').trim().replace(/\s+/g,' ').toUpperCase();
+    const fat     = parseFloat(String(row['FATURAMENTO'] || '0').replace(',','.')) || 0;
+    const fatPos  = String(row['FAT>0'] || (fat > 0 ? '1' : '0')).trim();
+    if (fatPos !== '1' && fat <= 0) return;
+
+    const seller = allSellers.find(s => s.csvName.trim().replace(/\s+/g,' ').toUpperCase() === vendRaw)
+                || allSellers.find(s => { const p = s.csvName.trim().replace(/\s+/g,' ').toUpperCase().split(' ').filter(Boolean); return p.length >= 2 && vendRaw.includes(p[0]) && vendRaw.includes(p[p.length-1]); });
+    if (!seller || !codGC) return;
+
+    const key = seller.csvName;
+    if (!diarioMap[key]) diarioMap[key] = {};
+    if (!diarioMap[key][codGC]) diarioMap[key][codGC] = { fat:0, clientesLoja: new Set(), dias: new Set(), nomeCliente: '' };
+
+    diarioMap[key][codGC].fat += fat;
+    const codCliLoja = String(row['COD_CLIENTE_LOJA'] || '').trim();
+    if (codCliLoja && fatPos === '1') diarioMap[key][codGC].clientesLoja.add(codCliLoja);
+
+    const dataFat = String(row['DATA_FAT'] || '').trim();
+    if (fat > 0 && dataFat.length >= 8) {
+      const dia = String(parseInt(dataFat.slice(6,8), 10));
+      diarioMap[key][codGC].dias.add(dia);
+    }
+    const nomeCli = String(row['NOME_CLIENTE'] || '').trim();
+    if (nomeCli && !diarioMap[key][codGC].nomeCliente) diarioMap[key][codGC].nomeCliente = nomeCli;
+  });
+
+  // Aplica apenas no vendedor ativo
+  const s   = activeSeller;
+  const map = diarioMap[s.csvName] || {};
+  const existingRows = csvData[s.csvName] || [];
+
+  // Zera fat/posit nas linhas existentes antes de reaplicar
+  existingRows.forEach(row => {
+    if (!row._fromDiario) {
+      row['FATURAMENTO'] = '0';
+      row['POSITIVAÇÃO'] = '0';
+      row['DIAS_VENDA']  = '';
+      row['FREQUENCIA']  = '0';
+    }
+  });
+
+  // Remove linhas _fromDiario antigas
+  csvData[s.csvName] = existingRows.filter(r => !r._fromDiario);
+
+  Object.keys(map).forEach(codGC => {
+    const d = map[codGC];
+    const diasArr = [...d.dias].map(Number).sort((a,b)=>a-b);
+    const diasStr = diasArr.join(';');
+    const fatRnd  = Math.round(d.fat);
+    const posit   = d.clientesLoja.size;
+
+    // Procura linha existente no CSV base
+    const existIdx = csvData[s.csvName].findIndex(r => {
+      const g = (r['GRUPO_  COMERCIAL']||'').trim();
+      const n = parseFloat(g.replace(',','.'));
+      const c = isNaN(n) ? g.replace(/^0+/,'') : String(Math.round(n));
+      return c === codGC;
+    });
+
+    if (existIdx >= 0) {
+      csvData[s.csvName][existIdx]['FATURAMENTO'] = String(fatRnd);
+      csvData[s.csvName][existIdx]['POSITIVAÇÃO']  = String(posit);
+      csvData[s.csvName][existIdx]['DIAS_VENDA']   = diasStr;
+      csvData[s.csvName][existIdx]['FREQUENCIA']   = String(diasArr.length);
+      if (d.nomeCliente && !csvData[s.csvName][existIdx]['NOME_GC'])
+        csvData[s.csvName][existIdx]['NOME_GC'] = d.nomeCliente;
+    } else {
+      // Cliente novo (não está no CSV base) — adiciona como _fromDiario
+      const newRow = {};
+      DISPLAY_COLS.forEach(col => { newRow[col.key] = ''; });
+      newRow['GRUPO_  COMERCIAL'] = codGC;
+      newRow['NOME_GC']           = d.nomeCliente || '';
+      newRow['FATURAMENTO']       = String(fatRnd);
+      newRow['POSITIVAÇÃO']        = String(posit);
+      newRow['DIAS_VENDA']        = diasStr;
+      newRow['FREQUENCIA']        = String(diasArr.length);
+      newRow['CARTEIRA']          = 'SIM';
+      newRow._fromDiario          = true;
+      csvData[s.csvName].push(newRow);
+    }
+  });
+
+  // Reabre o dashboard com dados atualizados
+  openDashboard(activeSeller);
+}
+
 document.getElementById('btnDashImportSheets').addEventListener('click', () => {
   // Cria um statusEl temporário abaixo do botão se não houver um visível
   const btn = document.getElementById('btnDashImportSheets');
