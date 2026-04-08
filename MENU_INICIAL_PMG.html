@@ -2977,7 +2977,7 @@ function mergePersistedData(sellerCsvName) {
     const saved  = savedMap[codGC + '|' + estado];
     if (saved) {
       PERSIST_FIELDS.forEach(f => {
-        if (f === 'GRUPO_  COMERCIAL' || f === '_isNew' || f === '_fromDiario') return;
+        if (f === 'GRUPO_  COMERCIAL' || f === '_fromDiario') return;
         if (saved[f] !== undefined) {
           if (f === 'DIAS_CONTATO') {
             row[f] = _cleanDias(saved[f]);
