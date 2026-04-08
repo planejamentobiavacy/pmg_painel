@@ -491,6 +491,7 @@
           <button id="btnAtualizarDiario" style="display:inline-flex;align-items:center;gap:6px;background:rgba(26,63,168,.7);border:1.5px solid rgba(255,255,255,.4);border-radius:8px;padding:9px 14px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;transition:.2s;" title="Buscar vendas atualizadas do Google Sheets">
             🔄 Atualizar
           </button>
+          <span id="bellIndicator" style="display:none;font-size:20px;cursor:pointer;animation:pulse 1.2s ease-in-out infinite;" title="Há dados novos no Sheets! Clique em Atualizar." onclick="document.getElementById('btnAtualizarDiario').click()">🔔</span>
           <button id="btnVendedorSalvar" style="display:inline-flex;align-items:center;gap:8px;background:rgba(16,145,80,.8);border:1.5px solid rgba(255,255,255,.4);border-radius:8px;padding:9px 18px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;transition:.2s;" title="Enviar dados para o Google Sheets">
             💾 Salvar
           </button>
@@ -2482,11 +2483,12 @@ document.getElementById('btnAtualizarDiario').addEventListener('click', () => {
 
 async function fetchVendasV1(manual = false) {
   const btn  = document.getElementById('btnAtualizarDiario');
-  btn.style.pointerEvents = 'none';
+  const bell = document.getElementById('bellIndicator');
+
   if (manual) {
     btn.innerHTML = '⏳ Buscando...';
+    btn.style.pointerEvents = 'none';
     btn.style.background = 'rgba(26,63,168,.7)';
-    btn.style.animation  = '';
   }
 
   try {
@@ -2499,71 +2501,73 @@ async function fetchVendasV1(manual = false) {
     const data = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
     if (data.status !== 'ok' || !data.rows) throw new Error(data.msg || 'Sem dados');
 
-    // Fingerprint: total de linhas + soma do faturamento
+    // Fingerprint: total linhas + soma FAT
     const fatSum = data.rows.reduce((acc, r) => {
-      const fatRaw = String(r['FATURAMENTO'] || '0').trim();
-      const fatStr = fatRaw.includes(',') ? fatRaw.replace(/\./g,'').replace(',','.') : fatRaw.replace(/\.(?=\d{3}(?:[^\d]|$))/g,'');
-      return acc + (parseFloat(fatStr) || 0);
+      const raw = String(r['FATURAMENTO'] || '0').trim();
+      const str = raw.includes(',') ? raw.replace(/\./g,'').replace(',','.') : raw.replace(/\.(?=\d{3}(?:[^\d]|$))/g,'');
+      return acc + (parseFloat(str) || 0);
     }, 0);
-    const newFingerprint = `${data.rows.length}_${Math.round(fatSum)}`;
+    const newFp = `${data.rows.length}_${Math.round(fatSum)}`;
 
-    if (!manual) {
-      if (newFingerprint !== _lastVendasV1Timestamp && _lastVendasV1Timestamp !== null) {
-        // Há dados novos — pisca o botão laranja
-        btn.innerHTML = '🔔 Dados novos!';
-        btn.style.background  = 'rgba(240,100,0,.85)';
-        btn.style.pointerEvents = '';
-        btn.style.animation   = 'pulse 1.2s ease-in-out infinite';
-      } else {
-        // Sem mudança ou primeira verificação — guarda fingerprint silenciosamente
-        _lastVendasV1Timestamp = newFingerprint;
-        btn.style.pointerEvents = '';
+    if (!manual && _lastVendasV1Timestamp !== null) {
+      // Verificação periódica — só mostra sininho se mudou
+      if (newFp !== _lastVendasV1Timestamp) {
+        _lastVendasV1Timestamp = newFp;
+        if (bell) bell.style.display = 'inline';
       }
+      btn.style.pointerEvents = '';
       return;
     }
 
-    // Clicou manualmente — aplica os dados
+    // Aplica dados: ao abrir dashboard (fingerprint null) OU clique manual
     _applyVendasV1(data.rows);
-    _lastVendasV1Timestamp = newFingerprint;
+    _lastVendasV1Timestamp = newFp;
+    if (bell) bell.style.display = 'none';
 
-    const now  = new Date();
-    const pad  = n => String(n).padStart(2,'0');
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
     const tsStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
     _lastAtualizadoTs = tsStr;
-
     const lbl = document.getElementById('lastUpdateLabel');
     if (lbl) lbl.textContent = `🔄 Atualizado: ${tsStr}`;
     if (activeSeller) localStorage.setItem('pmg_lastUpdate_' + activeSeller.name, tsStr);
 
-    btn.innerHTML = '✅ Atualizado!';
-    btn.style.background  = 'rgba(16,145,80,.8)';
-    btn.style.animation   = '';
-    btn.style.pointerEvents = '';
-    setTimeout(() => {
-      btn.innerHTML = '🔄 Atualizar';
-      btn.style.background = 'rgba(26,63,168,.7)';
-    }, 3000);
+    if (manual) {
+      btn.innerHTML = '✅ Atualizado!';
+      btn.style.background = 'rgba(16,145,80,.8)';
+      btn.style.pointerEvents = '';
+      setTimeout(() => {
+        btn.innerHTML = '🔄 Atualizar';
+        btn.style.background = 'rgba(26,63,168,.7)';
+      }, 3000);
+    } else {
+      btn.style.pointerEvents = '';
+    }
 
   } catch(err) {
     console.error('fetchVendasV1 erro:', err);
-    btn.innerHTML = '⚠ Erro';
-    btn.style.animation = '';
-    btn.style.pointerEvents = '';
-    setTimeout(() => {
-      btn.innerHTML = '🔄 Atualizar';
-      btn.style.background = 'rgba(26,63,168,.7)';
-    }, 3000);
+    if (manual) {
+      btn.innerHTML = '⚠ Erro';
+      btn.style.pointerEvents = '';
+      setTimeout(() => {
+        btn.innerHTML = '🔄 Atualizar';
+        btn.style.background = 'rgba(26,63,168,.7)';
+      }, 3000);
+    } else {
+      btn.style.pointerEvents = '';
+    }
   }
 }
 
-// Verificação automática a cada 10 minutos
+// Verificação a cada 10 minutos
 setInterval(() => {
   if (activeSeller) fetchVendasV1(false);
 }, 10 * 60 * 1000);
 
-// Primeira verificação ao abrir o dashboard (após 5s para não travar o carregamento)
+// Ao abrir dashboard — aplica automaticamente (fingerprint null força aplicação)
 function _startVendasV1Monitor() {
-  setTimeout(() => { if (activeSeller) fetchVendasV1(false); }, 5000);
+  _lastVendasV1Timestamp = null;
+  setTimeout(() => { if (activeSeller) fetchVendasV1(false); }, 1000);
 }
 
 function _applyVendasV1(rows) {
