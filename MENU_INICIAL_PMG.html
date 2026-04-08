@@ -367,7 +367,7 @@
   <div class="grid-wrapper" id="__adminBlock__">
     <!-- Instrução -->
     <p style="text-align:center;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:600;color:var(--text-mid);margin-bottom:28px;line-height:1.7;">
-      Importe o CSV base, o Venda Diária e clique em <strong>💾 Salvar Painel</strong> para distribuir aos vendedores
+      Importe o CSV base e clique em <strong>💾 Salvar Painel</strong> para distribuir aos vendedores
     </p>
 
     <!-- Botões de ação centralizados -->
@@ -377,8 +377,7 @@
         <span style="font-size:16px;">⬆</span> Importar CSV
       </button>
 
-      <button id="btnImportDiario" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#2271c5,#0f4a90);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(26,63,168,.3);transition:transform .15s,box-shadow .2s;">
-        <span style="font-size:16px;">📈</span> Venda Diária
+      <button id="btnImportDiario" style="display:none;">
       </button>
 
       <button id="btnImportSheets" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#0f9d58,#0b7a44);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(15,157,88,.3);transition:transform .15s,box-shadow .2s;">
@@ -496,7 +495,10 @@
             💾 Salvar
           </button>
         </div>
-        <div id="lastSaveLabel" style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:600;color:rgba(255,255,255,.6);text-align:right;min-height:14px;"></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+          <div id="lastUpdateLabel" style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:600;color:rgba(255,255,255,.6);text-align:right;min-height:13px;"></div>
+          <div id="lastSaveLabel"   style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:600;color:rgba(255,255,255,.6);text-align:right;min-height:13px;"></div>
+        </div>
         <button id="btnDashImportSheets" style="display:none;" title="Importar preenchimentos do Google Sheets">
           📊 Importar G.Sheets
         </button>
@@ -2372,7 +2374,7 @@ _htmlPicker.addEventListener('change', function() {
 function savePainel() {
   const totalRows = sellers.reduce((acc, s) => acc + (csvData[s.csvName] || []).length, 0);
   if (totalRows === 0) {
-    alert('Nenhum dado carregado. Importe o CSV base e o Venda Diária primeiro.');
+    alert('Nenhum dado carregado. Importe o CSV base primeiro.');
     return;
   }
   _htmlPicker.click();
@@ -2388,7 +2390,7 @@ function _buildPainel(sourceHTML) {
     const pad = n => String(n).padStart(2,'0');
     const dateLabel = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
     const dateFmt   = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}`;
-    const dataSnapshot = JSON.stringify(csvData);
+    const dataSnapshot = JSON.stringify(csvData).replace(/<\/script>/gi, '<\\/script>');
 
     // 1. Muda título
     sourceHTML = sourceHTML.replace('<h1>Menu Inicial</h1>', '<h1>Painel de Vendedores</h1>');
@@ -2458,42 +2460,90 @@ if (_btnIS) _btnIS.addEventListener('click', () => {
 
 // Botão no dashboard (painel do vendedor — Netlify)
 // ── ATUALIZAR VENDA DIÁRIA VIA SHEETS (vendas_v1) ────────────
+let _lastVendasV1Timestamp = null; // timestamp da última linha vista no vendas_v1
+let _lastAtualizadoTs      = null; // quando o vendedor clicou Atualizar pela última vez
+
 document.getElementById('btnAtualizarDiario').addEventListener('click', () => {
-  fetchVendasV1();
+  fetchVendasV1(true);
 });
 
-async function fetchVendasV1() {
-  const btn = document.getElementById('btnAtualizarDiario');
+async function fetchVendasV1(manual = false) {
+  const btn  = document.getElementById('btnAtualizarDiario');
   const orig = btn.innerHTML;
   btn.innerHTML = '⏳ Buscando...';
   btn.style.pointerEvents = 'none';
+  btn.style.background = 'rgba(26,63,168,.7)';
+  btn.style.animation  = '';
 
   try {
-    const url = SHEETS_WEBHOOK_URL + '?action=vendas_v1';
+    const url  = SHEETS_WEBHOOK_URL + '?action=vendas_v1';
     const resp = await fetch(url);
     const text = await resp.text();
     const jsonStart = text.indexOf('{');
     const jsonEnd   = text.lastIndexOf('}');
-    if (jsonStart < 0 || jsonEnd < 0) throw new Error('Resposta inválida do servidor');
+    if (jsonStart < 0 || jsonEnd < 0) throw new Error('Resposta inválida');
     const data = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
     if (data.status !== 'ok' || !data.rows) throw new Error(data.msg || 'Sem dados');
 
-    // Processa igual ao parseDiario mas com dados do Sheets
+    // Verifica se há dados novos comparando o timestamp da última linha
+    const newTs = data.rows.length > 0 ? (data.rows[data.rows.length - 1]['DATA_FAT'] || '') : '';
+
+    if (!manual && newTs === _lastVendasV1Timestamp) {
+      // Sem dados novos — apenas reseta o botão
+      btn.innerHTML = orig;
+      btn.style.pointerEvents = '';
+      return;
+    }
+
+    if (!manual && newTs !== _lastVendasV1Timestamp) {
+      // Há dados novos mas vendedor não clicou — pisca o botão laranja
+      btn.innerHTML = '🔔 Dados novos!';
+      btn.style.background  = 'rgba(240,100,0,.85)';
+      btn.style.pointerEvents = '';
+      btn.style.animation   = 'pulse 1.2s ease-in-out infinite';
+      _lastVendasV1Timestamp = newTs;
+      return;
+    }
+
+    // Clicou manualmente — aplica os dados
     _applyVendasV1(data.rows);
+    _lastVendasV1Timestamp = newTs;
+
+    const now  = new Date();
+    const pad  = n => String(n).padStart(2,'0');
+    const tsStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    _lastAtualizadoTs = tsStr;
+
+    const lbl = document.getElementById('lastUpdateLabel');
+    if (lbl) lbl.textContent = `🔄 Atualizado: ${tsStr}`;
 
     btn.innerHTML = '✅ Atualizado!';
-    const now = new Date();
-    const pad = n => String(n).padStart(2,'0');
-    const lbl = document.getElementById('lastSaveLabel');
-    if (lbl) lbl.textContent = `Atualizado: ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    setTimeout(() => { btn.innerHTML = orig; btn.style.pointerEvents = ''; }, 3000);
+    btn.style.background  = 'rgba(16,145,80,.8)';
+    btn.style.pointerEvents = '';
+    setTimeout(() => {
+      btn.innerHTML = '🔄 Atualizar';
+      btn.style.background = 'rgba(26,63,168,.7)';
+    }, 3000);
 
   } catch(err) {
     console.error('fetchVendasV1 erro:', err);
     btn.innerHTML = '⚠ Erro';
-    setTimeout(() => { btn.innerHTML = orig; btn.style.pointerEvents = ''; }, 3000);
+    btn.style.pointerEvents = '';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.background = 'rgba(26,63,168,.7)'; }, 3000);
   }
 }
+
+// Verificação automática a cada 10 minutos
+setInterval(() => {
+  if (activeSeller) fetchVendasV1(false);
+}, 10 * 60 * 1000);
+
+// CSS para animação pulse
+(function() {
+  const s = document.createElement('style');
+  s.textContent = '@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.75;transform:scale(1.04)} }';
+  document.head.appendChild(s);
+})();
 
 function _applyVendasV1(rows) {
   if (!activeSeller) return;
@@ -2506,7 +2556,12 @@ function _applyVendasV1(rows) {
     const codNum  = parseFloat(codRaw.replace(',','.'));
     const codGC   = !isNaN(codNum) ? String(Math.round(codNum)) : codRaw.replace(/^0+/,'') || codRaw;
     const vendRaw = String(row['NOME_VENDEDOR'] || '').trim().replace(/\s+/g,' ').toUpperCase();
-    const fat     = parseFloat(String(row['FATURAMENTO'] || '0').replace(',','.')) || 0;
+    // Parse robusto: suporta "148.736", "148.736,50", "148736", "148736.50"
+    const fatRaw  = String(row['FATURAMENTO'] || '0').trim();
+    const fatStr  = fatRaw.includes(',')
+      ? fatRaw.replace(/\./g,'').replace(',','.')
+      : fatRaw.replace(/\.(?=\d{3}(?:[^\d]|$))/g,'');
+    const fat     = parseFloat(fatStr) || 0;
     const fatPos  = String(row['FAT>0'] || (fat > 0 ? '1' : '0')).trim();
     if (fatPos !== '1' && fat <= 0) return;
 
@@ -3017,7 +3072,7 @@ function scheduleSave() {
 // SALVAR PAINEL DO VENDEDOR — Google Sheets
 // ─────────────────────────────────────────────
 
-const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzCqxTtAzzpHuxMIY-5zIK3ePsl65HoLpWgz-ibxWCBjGhHWwy99DtYi3W4BtOW1no1/exec';
+const SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzdXi5KGvDjWl09RMUDr1KixpMZFFcmYGcmUXqDTn-hutNpkS-7Dp8K_GuUNAxOClOt/exec';
 
 document.getElementById('btnVendedorSalvar').addEventListener('click', async () => {
   if (!activeSeller) return;
@@ -3230,7 +3285,7 @@ if (window.__PMG_IS_PAINEL__) {
           const pad2 = n => String(n).padStart(2,'0');
           const ts = `${pad2(now2.getDate())}/${pad2(now2.getMonth()+1)}/${now2.getFullYear()} ${pad2(now2.getHours())}:${pad2(now2.getMinutes())}`;
           const lbl = document.getElementById('lastSaveLabel');
-          if (lbl) lbl.textContent = `Último envio: ${ts}`;
+          if (lbl) lbl.textContent = `💾 Salvo: ${ts}`;
           if (activeSeller) localStorage.setItem('pmg_lastSave_' + activeSeller.name, ts);
           setTimeout(() => { if (btn) btn.innerHTML = `💾 Salvar`; }, 3000);
         }, 2000);
