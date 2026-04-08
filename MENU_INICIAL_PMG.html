@@ -2667,8 +2667,24 @@ function _applyVendasV1(rows) {
     }
   });
 
-  // Reabre o dashboard com dados atualizados
-  openDashboard(activeSeller);
+  // Atualiza activeRows e re-renderiza sem chamar openDashboard
+  // (evita loop e perda de linhas _isNew)
+  activeRows = (csvData[s.csvName] || []).filter(r => {
+    const g = (r['GRUPO_  COMERCIAL'] || '').trim();
+    return g !== '' && g !== '0' && !isNaN(parseFloat(g)) ? true : (g !== '');
+  });
+  activeRows.forEach(r => {
+    const fat = parseFloat(String(r['FATURAMENTO'] || '0').replace(',','.')) || 0;
+    r['VENDA'] = fat > 0 ? 'SIM' : 'NÃO';
+    if (fat > 0 && r['CARTEIRA'] !== 'NÃO') r['CARTEIRA'] = 'SIM';
+    const posit = parseInt(r['POSITIVAÇÃO'] || '0', 10);
+    r['POSITIVAÇÃO'] = isNaN(posit) ? '0' : String(posit);
+    if (!r['CLUSTER'] || r['CLUSTER'].trim() === '') r['CLUSTER'] = 'DEMAIS';
+  });
+  activeClusters = [...new Set(activeRows.map(r => r['CLUSTER']).filter(Boolean))];
+  applyFilters();
+  renderTable();
+  renderStats(filteredRows.length > 0 ? filteredRows : activeRows);
 }
 
 document.getElementById('btnDashImportSheets').addEventListener('click', () => {
