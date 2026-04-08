@@ -1468,7 +1468,13 @@ function openDashboard(s) {
   // Mescla preenchimentos salvos antes de filtrar
   const hadCache = mergePersistedData(s.csvName);
   const banner = document.getElementById('cacheWarningBanner');
-  if (banner) banner.style.display = hadCache ? 'flex' : 'none';
+  if (banner) {
+    // Só mostra o banner se o cache for de um dia anterior
+    const savedDate = localStorage.getItem('pmg_saveDate_' + s.csvName);
+    const today = new Date().toDateString();
+    const isOldCache = hadCache && savedDate && savedDate !== today;
+    banner.style.display = isOldCache ? 'flex' : 'none';
+  }
 
   // Apenas linhas com GRUPO COMERCIAL preenchido
   activeRows = (csvData[s.csvName] || []).filter(r => {
@@ -1514,7 +1520,13 @@ function openDashboard(s) {
   const lbl = document.getElementById('lastSaveLabel');
   if (lbl) {
     const ts = localStorage.getItem('pmg_lastSave_' + s.name);
-    lbl.textContent = ts ? `Último envio: ${ts}` : '';
+    lbl.textContent = ts ? `💾 Salvo: ${ts}` : '';
+  }
+  // Restaura último atualizado do localStorage
+  const lblU = document.getElementById('lastUpdateLabel');
+  if (lblU) {
+    const tsU = localStorage.getItem('pmg_lastUpdate_' + s.name);
+    lblU.textContent = tsU ? `🔄 Atualizado: ${tsU}` : '';
   }
   window.scrollTo(0, 0);
 }
@@ -2516,6 +2528,7 @@ async function fetchVendasV1(manual = false) {
 
     const lbl = document.getElementById('lastUpdateLabel');
     if (lbl) lbl.textContent = `🔄 Atualizado: ${tsStr}`;
+    if (activeSeller) localStorage.setItem('pmg_lastUpdate_' + activeSeller.name, tsStr);
 
     btn.innerHTML = '✅ Atualizado!';
     btn.style.background  = 'rgba(16,145,80,.8)';
@@ -2919,6 +2932,7 @@ function saveSellerData(sellerCsvName) {
       return entry;
     });
     localStorage.setItem('pmg2_' + sellerCsvName, JSON.stringify(payload));
+    localStorage.setItem('pmg_saveDate_' + sellerCsvName, new Date().toDateString());
   } catch(e) { console.warn('localStorage save error:', e); }
 }
 
