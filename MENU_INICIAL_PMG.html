@@ -3099,7 +3099,7 @@ document.getElementById('btnVendedorSalvar').addEventListener('click', async () 
     const now = new Date();
     const pad = n => String(n).padStart(2,'0');
     const hoje = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}`;
-    const dateFmt = `${hoje} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const dateFmt = `${hoje} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
     // Filtra apenas linhas com GRUPO COMERCIAL preenchido
     const filledRows = activeRows.filter(row => (row['GRUPO_  COMERCIAL'] || '').trim() !== '');
@@ -3297,7 +3297,7 @@ if (window.__PMG_IS_PAINEL__) {
           btn.style.pointerEvents = '';
           const now2 = new Date();
           const pad2 = n => String(n).padStart(2,'0');
-          const ts = `${pad2(now2.getDate())}/${pad2(now2.getMonth()+1)}/${now2.getFullYear()} ${pad2(now2.getHours())}:${pad2(now2.getMinutes())}`;
+          const ts = `${pad2(now2.getDate())}/${pad2(now2.getMonth()+1)}/${now2.getFullYear()} ${pad2(now2.getHours())}:${pad2(now2.getMinutes())}:${pad2(now2.getSeconds())}`;
           const lbl = document.getElementById('lastSaveLabel');
           if (lbl) lbl.textContent = `💾 Salvo: ${ts}`;
           if (activeSeller) localStorage.setItem('pmg_lastSave_' + activeSeller.name, ts);
