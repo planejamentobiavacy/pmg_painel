@@ -1529,6 +1529,7 @@ function openDashboard(s) {
     lblU.textContent = tsU ? `🔄 Atualizado: ${tsU}` : '';
   }
   window.scrollTo(0, 0);
+  _startVendasV1Monitor();
 }
 
 // ─────────────────────────────────────────────
@@ -2472,7 +2473,7 @@ if (_btnIS) _btnIS.addEventListener('click', () => {
 
 // Botão no dashboard (painel do vendedor — Netlify)
 // ── ATUALIZAR VENDA DIÁRIA VIA SHEETS (vendas_v1) ────────────
-let _lastVendasV1Timestamp = null; // timestamp da última linha vista no vendas_v1
+let _lastVendasV1Timestamp = null; // fingerprint dos últimos dados vistos
 let _lastAtualizadoTs      = null; // quando o vendedor clicou Atualizar pela última vez
 
 document.getElementById('btnAtualizarDiario').addEventListener('click', () => {
@@ -2481,11 +2482,12 @@ document.getElementById('btnAtualizarDiario').addEventListener('click', () => {
 
 async function fetchVendasV1(manual = false) {
   const btn  = document.getElementById('btnAtualizarDiario');
-  const orig = btn.innerHTML;
-  btn.innerHTML = '⏳ Buscando...';
   btn.style.pointerEvents = 'none';
-  btn.style.background = 'rgba(26,63,168,.7)';
-  btn.style.animation  = '';
+  if (manual) {
+    btn.innerHTML = '⏳ Buscando...';
+    btn.style.background = 'rgba(26,63,168,.7)';
+    btn.style.animation  = '';
+  }
 
   try {
     const url  = SHEETS_WEBHOOK_URL + '?action=vendas_v1';
@@ -2497,29 +2499,32 @@ async function fetchVendasV1(manual = false) {
     const data = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
     if (data.status !== 'ok' || !data.rows) throw new Error(data.msg || 'Sem dados');
 
-    // Verifica se há dados novos comparando o timestamp da última linha
-    const newTs = data.rows.length > 0 ? (data.rows[data.rows.length - 1]['DATA_FAT'] || '') : '';
+    // Fingerprint: total de linhas + soma do faturamento
+    const fatSum = data.rows.reduce((acc, r) => {
+      const fatRaw = String(r['FATURAMENTO'] || '0').trim();
+      const fatStr = fatRaw.includes(',') ? fatRaw.replace(/\./g,'').replace(',','.') : fatRaw.replace(/\.(?=\d{3}(?:[^\d]|$))/g,'');
+      return acc + (parseFloat(fatStr) || 0);
+    }, 0);
+    const newFingerprint = `${data.rows.length}_${Math.round(fatSum)}`;
 
-    if (!manual && newTs === _lastVendasV1Timestamp) {
-      // Sem dados novos — apenas reseta o botão
-      btn.innerHTML = orig;
-      btn.style.pointerEvents = '';
-      return;
-    }
-
-    if (!manual && newTs !== _lastVendasV1Timestamp) {
-      // Há dados novos mas vendedor não clicou — pisca o botão laranja
-      btn.innerHTML = '🔔 Dados novos!';
-      btn.style.background  = 'rgba(240,100,0,.85)';
-      btn.style.pointerEvents = '';
-      btn.style.animation   = 'pulse 1.2s ease-in-out infinite';
-      _lastVendasV1Timestamp = newTs;
+    if (!manual) {
+      if (newFingerprint !== _lastVendasV1Timestamp && _lastVendasV1Timestamp !== null) {
+        // Há dados novos — pisca o botão laranja
+        btn.innerHTML = '🔔 Dados novos!';
+        btn.style.background  = 'rgba(240,100,0,.85)';
+        btn.style.pointerEvents = '';
+        btn.style.animation   = 'pulse 1.2s ease-in-out infinite';
+      } else {
+        // Sem mudança ou primeira verificação — guarda fingerprint silenciosamente
+        _lastVendasV1Timestamp = newFingerprint;
+        btn.style.pointerEvents = '';
+      }
       return;
     }
 
     // Clicou manualmente — aplica os dados
     _applyVendasV1(data.rows);
-    _lastVendasV1Timestamp = newTs;
+    _lastVendasV1Timestamp = newFingerprint;
 
     const now  = new Date();
     const pad  = n => String(n).padStart(2,'0');
@@ -2532,6 +2537,7 @@ async function fetchVendasV1(manual = false) {
 
     btn.innerHTML = '✅ Atualizado!';
     btn.style.background  = 'rgba(16,145,80,.8)';
+    btn.style.animation   = '';
     btn.style.pointerEvents = '';
     setTimeout(() => {
       btn.innerHTML = '🔄 Atualizar';
@@ -2541,8 +2547,12 @@ async function fetchVendasV1(manual = false) {
   } catch(err) {
     console.error('fetchVendasV1 erro:', err);
     btn.innerHTML = '⚠ Erro';
+    btn.style.animation = '';
     btn.style.pointerEvents = '';
-    setTimeout(() => { btn.innerHTML = orig; btn.style.background = 'rgba(26,63,168,.7)'; }, 3000);
+    setTimeout(() => {
+      btn.innerHTML = '🔄 Atualizar';
+      btn.style.background = 'rgba(26,63,168,.7)';
+    }, 3000);
   }
 }
 
@@ -2551,12 +2561,10 @@ setInterval(() => {
   if (activeSeller) fetchVendasV1(false);
 }, 10 * 60 * 1000);
 
-// CSS para animação pulse
-(function() {
-  const s = document.createElement('style');
-  s.textContent = '@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.75;transform:scale(1.04)} }';
-  document.head.appendChild(s);
-})();
+// Primeira verificação ao abrir o dashboard (após 5s para não travar o carregamento)
+function _startVendasV1Monitor() {
+  setTimeout(() => { if (activeSeller) fetchVendasV1(false); }, 5000);
+}
 
 function _applyVendasV1(rows) {
   if (!activeSeller) return;
