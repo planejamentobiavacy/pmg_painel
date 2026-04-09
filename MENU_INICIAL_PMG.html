@@ -2573,6 +2573,10 @@ function _startVendasV1Monitor() {
 function _applyVendasV1(rows) {
   if (!activeSeller) return;
 
+  // Persiste dados atuais antes de qualquer modificação (preserva contatos)
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  saveSellerData(activeSeller.csvName);
+
   // Monta diarioMap igual ao parseDiario
   const diarioMap = {};
 
@@ -2617,8 +2621,9 @@ function _applyVendasV1(rows) {
   const existingRows = csvData[s.csvName] || [];
 
   // Zera fat/posit nas linhas existentes antes de reaplicar
+  // Não toca em _isNew para preservar clientes adicionados manualmente
   existingRows.forEach(row => {
-    if (!row._fromDiario) {
+    if (!row._fromDiario && !row._isNew) {
       row['FATURAMENTO'] = '0';
       row['POSITIVAÇÃO'] = '0';
       row['DIAS_VENDA']  = '';
@@ -2626,7 +2631,7 @@ function _applyVendasV1(rows) {
     }
   });
 
-  // Remove linhas _fromDiario antigas
+  // Remove linhas _fromDiario antigas (preserva _isNew)
   csvData[s.csvName] = existingRows.filter(r => !r._fromDiario);
 
   Object.keys(map).forEach(codGC => {
