@@ -166,7 +166,7 @@
   .filter-chip.active { background:var(--blue-mid); border-color:var(--blue-mid); color:var(--white); }
 
   /* table */
-  .table-scroll { overflow-x:auto; max-height:520px; overflow-y:auto; }
+  .table-scroll { overflow-x:auto; }
   table { width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
   thead { position:sticky; top:0; z-index:20; }
   thead tr { background:#eef1fb; }
@@ -367,7 +367,7 @@
   <div class="grid-wrapper" id="__adminBlock__">
     <!-- Instrução -->
     <p style="text-align:center;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:600;color:var(--text-mid);margin-bottom:28px;line-height:1.7;">
-      Importe o CSV base e clique em <strong>💾 Salvar Painel</strong> para distribuir aos vendedores
+      Importe o CSV base → clique em <strong>📊 Importar G.Sheets</strong> → clique em <strong>💾 Salvar Painel</strong>
     </p>
 
     <!-- Botões de ação centralizados -->
@@ -390,6 +390,10 @@
 
       <button id="btnImportCadastro" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#0a7eb4,#055a82);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(10,126,180,.3);transition:transform .15s,box-shadow .2s;">
         <span style="font-size:16px;">👤</span> Cadastro
+      </button>
+
+      <button id="btnImportSenhasFerias" title="Importar CSV com senhas e férias dos vendedores" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#7a3fa8,#5a1c8a);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(122,63,168,.3);transition:transform .15s,box-shadow .2s;">
+        <span style="font-size:16px;">🔑</span> Senhas/Férias
       </button>
 
       <button id="btnSavePainel" title="Selecione este mesmo arquivo HTML base para gerar a versão com os dados embutidos" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--blue-mid),var(--blue-dark));border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(26,63,168,.3);transition:transform .15s,box-shadow .2s;">
@@ -431,7 +435,12 @@
         <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:14px;letter-spacing:1px;color:#fff;text-transform:uppercase;" id="insightTitle">Sugestão Inteligente</div>
         <div style="font-family:'Montserrat',sans-serif;font-size:11px;color:rgba(255,255,255,.8);margin-top:2px;" id="insightSubtitle"></div>
       </div>
-      <button onclick="closeInsight()" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="exportInsightPDF()" style="background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.5);border-radius:8px;padding:7px 14px;cursor:pointer;color:#fff;font-family:'Montserrat',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:6px;">
+          📄 Exportar PDF
+        </button>
+        <button onclick="closeInsight()" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
     </div>
     <div id="insightBody" style="overflow-y:auto;padding:16px;flex:1;font-family:'Montserrat',sans-serif;"></div>
   </div>
@@ -516,6 +525,9 @@
 
     <!-- Banner de aviso de cache removido — dados do cache são necessários -->
 
+    <!-- Banner de férias -->
+    <div id="feriasBanner" style="display:none;margin:16px 24px 0;padding:12px 18px;background:#e8f4ff;border:1.5px solid #2271c5;border-radius:10px;align-items:center;gap:12px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#0f2670;"></div>
+
     <div class="stats-row" id="statsRow"></div>
 
     <div class="clients-card">
@@ -565,6 +577,53 @@ const sellersHava = [
 
 // Lista completa para processamento de CSV/dados
 const allSellers = [...sellers, ...sellersDev, ...sellersHava];
+
+// ── SENHAS / FÉRIAS ─────────────────────────────────────────
+// Estrutura: [{ vendedor, senha, substituto, de, ate }]
+let senhasFerias = [];
+
+// Restaura férias embutidas pelo Salvar Painel (converte ISO string → Date)
+if (typeof window.__PMG_FERIAS__ !== 'undefined' && Array.isArray(window.__PMG_FERIAS__) && window.__PMG_FERIAS__.length > 0) {
+  senhasFerias = window.__PMG_FERIAS__.map(r => ({
+    vendedor:   (r.vendedor   || '').toUpperCase(),
+    substituto: (r.substituto || '').toUpperCase(),
+    de:  r.de  ? new Date(r.de)  : null,
+    ate: r.ate ? new Date(r.ate) : null,
+  })).filter(r => r.de && r.ate && !isNaN(r.de.getTime()) && !isNaN(r.ate.getTime()));
+}
+
+// Retorna a senha efetiva de um seller (considerando férias)
+function getEffectivePassword(seller) {
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+  const regra = senhasFerias.find(r => {
+    const de  = new Date(r.de);  de.setHours(0,0,0,0);
+    const ate = new Date(r.ate); ate.setHours(23,59,59,999);
+    return r.vendedor.toUpperCase() === seller.name.toUpperCase()
+      && hoje >= de && hoje <= ate;
+  });
+  if (regra) {
+    const sub = allSellers.find(s => s.name.toUpperCase() === regra.substituto.toUpperCase());
+    return sub ? sub.password : seller.password;
+  }
+  return seller.password;
+}
+
+function getEffectiveSaveTarget(seller) {
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+  const regra = senhasFerias.find(r => {
+    const de  = new Date(r.de);  de.setHours(0,0,0,0);
+    const ate = new Date(r.ate); ate.setHours(23,59,59,999);
+    return r.vendedor.toUpperCase() === seller.name.toUpperCase()
+      && hoje >= de && hoje <= ate;
+  });
+  if (regra) {
+    const sub = allSellers.find(s => s.name.toUpperCase() === regra.substituto.toUpperCase());
+    return sub || seller;
+  }
+  return seller;
+}
 
 // Colunas a exibir na tabela (legíveis)
 const DISPLAY_COLS = [
@@ -634,6 +693,30 @@ function buildSellersGrid() {
     });
   };
 
+  // Helper: cria card com badge de férias se aplicável
+  const buildCard = (s, parentGrid) => {
+    const emFerias = senhasFerias.some(r => {
+      const de  = new Date(r.de);  de.setHours(0,0,0,0);
+      const ate = new Date(r.ate); ate.setHours(23,59,59,999);
+      const hoje = new Date(); hoje.setHours(0,0,0,0);
+      return r.vendedor.toUpperCase() === s.name.toUpperCase() && hoje >= de && hoje <= ate;
+    });
+    const card = document.createElement('div');
+    card.className = 'seller-card';
+    card.id = 'card-' + s.name;
+    const badgeFerias = emFerias
+      ? `<div style="position:absolute;top:8px;right:8px;background:#f0a500;color:#fff;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 7px;border-radius:20px;text-transform:uppercase;">🏖 Férias</div>`
+      : '';
+    card.innerHTML = `
+      ${badgeFerias}
+      <div class="avatar" style="${emFerias ? 'background:linear-gradient(135deg,#f0a500,#c47d00);' : ''}">${s.name[0]}</div>
+      <div class="seller-name">${s.name}</div>
+      <button class="card-btn" style="${emFerias ? 'background:linear-gradient(135deg,#f0a500,#c47d00);' : ''}">ACESSAR</button>
+    `;
+    card.addEventListener('click', () => openModal(s));
+    parentGrid.appendChild(card);
+  };
+
   // Seção Farmer
   const labelFarmer = document.createElement('p');
   labelFarmer.className = 'section-label';
@@ -642,14 +725,7 @@ function buildSellersGrid() {
   const gridFarmer = document.createElement('div');
   gridFarmer.className = 'cards-grid';
   grid.appendChild(gridFarmer);
-  sellers.forEach(s => {
-    const card = document.createElement('div');
-    card.className = 'seller-card';
-    card.id = 'card-' + s.name;
-    card.innerHTML = `<div class="avatar">${s.name[0]}</div><div class="seller-name">${s.name}</div><button class="card-btn">ACESSAR</button>`;
-    card.addEventListener('click', () => openModal(s));
-    gridFarmer.appendChild(card);
-  });
+  sellers.forEach(s => buildCard(s, gridFarmer));
 
   // Seção Developer
   const labelDev = document.createElement('p');
@@ -660,14 +736,7 @@ function buildSellersGrid() {
   const gridDev = document.createElement('div');
   gridDev.className = 'cards-grid';
   grid.appendChild(gridDev);
-  sellersDev.forEach(s => {
-    const card = document.createElement('div');
-    card.className = 'seller-card';
-    card.id = 'card-' + s.name;
-    card.innerHTML = `<div class="avatar">${s.name[0]}</div><div class="seller-name">${s.name}</div><button class="card-btn">ACESSAR</button>`;
-    card.addEventListener('click', () => openModal(s));
-    gridDev.appendChild(card);
-  });
+  sellersDev.forEach(s => buildCard(s, gridDev));
 
   // Seção Hava
   const labelHava = document.createElement('p');
@@ -678,14 +747,7 @@ function buildSellersGrid() {
   const gridHava = document.createElement('div');
   gridHava.className = 'cards-grid';
   grid.appendChild(gridHava);
-  sellersHava.forEach(s => {
-    const card = document.createElement('div');
-    card.className = 'seller-card';
-    card.id = 'card-' + s.name;
-    card.innerHTML = `<div class="avatar">${s.name[0]}</div><div class="seller-name">${s.name}</div><button class="card-btn">ACESSAR</button>`;
-    card.addEventListener('click', () => openModal(s));
-    gridHava.appendChild(card);
-  });
+  sellersHava.forEach(s => buildCard(s, gridHava));
 
   return true;
 }
@@ -880,6 +942,42 @@ function openUltCompras(codGC, nomeCliente, btnEl) {
   overlay.style.display = 'flex';
 }
 
+function exportInsightPDF() {
+  const title    = document.getElementById('insightTitle').textContent;
+  const subtitle = document.getElementById('insightSubtitle').textContent;
+  const body     = document.getElementById('insightBody').innerHTML;
+
+  const printWin = window.open('', '_blank', 'width=800,height=900');
+  printWin.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>Sugestão — ${title}</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #222; padding: 24px; }
+      .header { background: linear-gradient(135deg,#f0a500,#c47d00); color: #fff; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; }
+      .header h1 { font-size: 16px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+      .header p  { font-size: 11px; opacity: .85; margin-top: 4px; }
+      table { width: 100%; border-collapse: collapse; }
+      th { background: #f4f6fb; padding: 7px 10px; text-align: left; font-weight: 700; color: #3a4a7a; font-size: 11px; border-bottom: 2px solid #e0e4f0; }
+      td { padding: 6px 10px; border-bottom: 1px solid #eef0f8; font-size: 12px; }
+      tr:nth-child(even) td { background: #fafbff; }
+      div[style*="background:#e8ecf8"], div[style*="background:#e8f5ee"] { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      @media print {
+        body { padding: 16px; }
+        @page { margin: 1cm; size: A4; }
+      }
+    </style>
+  </head><body>
+    <div class="header"><h1>${title}</h1><p>${subtitle}</p></div>
+    ${body}
+    <div style="margin-top:20px;font-size:10px;color:#aaa;text-align:right;">
+      Gerado em ${new Date().toLocaleString('pt-BR')} · PMG 3.0
+    </div>
+  </body></html>`);
+  printWin.document.close();
+  setTimeout(() => { printWin.focus(); printWin.print(); }, 600);
+}
+
 function closeInsight() {
   document.getElementById('insightOverlay').style.display = 'none';
 }
@@ -1047,6 +1145,115 @@ function closeUltCompras() {
 document.getElementById('ultComprasOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('ultComprasOverlay')) closeUltCompras();
 });
+
+// ── SENHAS / FÉRIAS ──────────────────────────────────────────
+document.getElementById('btnImportSenhasFerias').addEventListener('click', () => {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.csv,.txt';
+  inp.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => parseSenhasFerias(ev.target.result);
+    reader.readAsText(file, 'ISO-8859-1');
+  };
+  inp.click();
+});
+
+function parseSenhasFerias(text) {
+  const delim = text.split('\n')[0].includes('\t') ? '\t' : text.split('\n')[0].includes(';') ? ';' : ',';
+  const lines = text.split('\n').map(l => l.replace(/\r/g,'').trim()).filter(l => l);
+  if (lines.length < 2) { alert('CSV Senhas/Férias vazio ou inválido.'); return; }
+
+  const headers = lines[0].split(delim).map(h => h.trim().toUpperCase());
+  const iVend  = headers.indexOf('VENDEDOR');
+  const iSenha = headers.indexOf('SENHA');
+  const iSub   = headers.indexOf('SUBSTITUTO');
+  const iDe    = headers.indexOf('DE');
+  const iAte   = headers.indexOf('ATE');
+
+  if (iVend < 0 || iSenha < 0) { alert('Colunas VENDEDOR e SENHA não encontradas.'); return; }
+
+  // Atualiza senhas e férias
+  const novasSenhas = {};
+  const novasFerias = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols  = lines[i].split(delim);
+    const vend  = (cols[iVend]  || '').trim();   // csvName ou name
+    const senha = (cols[iSenha] || '').trim();
+    const sub   = iSub >= 0 ? (cols[iSub] || '').trim() : '';
+    const deStr = iDe  >= 0 ? (cols[iDe]  || '').trim() : '';
+    const ateStr= iAte >= 0 ? (cols[iAte] || '').trim() : '';
+    if (!vend || !senha) continue;
+
+    // Guarda por nome original (csvName ou name) em maiúsculas
+    novasSenhas[vend.toUpperCase()] = senha;
+
+    // Processa período de férias — suporta "6" (só dia), "06/04/2026" ou "2026-04-06"
+    if (sub && deStr && ateStr) {
+      const parseDate = s => {
+        s = s.trim();
+        // Só número = dia do mês atual
+        if (/^\d{1,2}$/.test(s)) {
+          const hoje = new Date();
+          return new Date(hoje.getFullYear(), hoje.getMonth(), parseInt(s, 10));
+        }
+        // DD/MM/YYYY
+        const p = s.split('/');
+        if (p.length === 3) return new Date(+p[2], +p[1]-1, +p[0]);
+        return new Date(s);
+      };
+      const de  = parseDate(deStr);
+      const ate = parseDate(ateStr);
+      de.setHours(0,0,0,0); ate.setHours(23,59,59,999);
+      if (!isNaN(de.getTime()) && !isNaN(ate.getTime())) {
+        // Encontra o seller pelo csvName ou name
+        const findSeller = str => allSellers.find(s =>
+          s.csvName.toUpperCase() === str.toUpperCase() ||
+          s.name.toUpperCase()    === str.toUpperCase()
+        );
+        const vendSeller = findSeller(vend);
+        const subSeller  = findSeller(sub);
+        if (vendSeller && subSeller) {
+          novasFerias.push({
+            vendedor:   vendSeller.name.toUpperCase(),
+            substituto: subSeller.name.toUpperCase(),
+            de, ate
+          });
+        }
+      }
+    }
+  }
+
+  // Aplica senhas em todos os sellers — CSV usa csvName na coluna VENDEDOR
+  allSellers.forEach(s => {
+    // Tenta match pelo csvName primeiro, depois pelo name
+    const novaSenha = novasSenhas[s.csvName.toUpperCase()] || novasSenhas[s.name.toUpperCase()];
+    if (novaSenha) s.password = novaSenha;
+  });
+
+  senhasFerias = novasFerias;
+
+  // Feedback
+  const btn = document.getElementById('btnImportSenhasFerias');
+  const totalSenhas = Object.keys(novasSenhas).length;
+  const totalFerias = novasFerias.length;
+  btn.innerHTML = `<span style="font-size:16px;">✅</span> ${totalSenhas} senhas${totalFerias > 0 ? ` · ${totalFerias} férias` : ''}`;
+  btn.style.background = 'linear-gradient(135deg,#109150,#0c7a44)';
+  setTimeout(() => {
+    btn.innerHTML = `<span style="font-size:16px;">🔑</span> Senhas/Férias`;
+    btn.style.background = 'linear-gradient(135deg,#7a3fa8,#5a1c8a)';
+  }, 4000);
+
+  // Mostra alerta se algum vendedor está de férias hoje
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const emFerias = novasFerias.filter(r => r.de <= hoje && hoje <= r.ate);
+  if (emFerias.length > 0) {
+    const msg = emFerias.map(r => `• ${r.vendedor} (substituto: ${r.substituto})`).join('\n');
+    alert(`🏖 Vendedores em férias hoje:\n\n${msg}\n\nA senha deles foi substituída pela senha do substituto.`);
+  }
+}
 
 // ── CADASTRO ──────────────────────────────────────────────
 document.getElementById('btnImportCadastro').addEventListener('click', () => {
@@ -1420,8 +1627,8 @@ function closeModal() { overlay.classList.remove('active'); currentSeller = null
 
 function attemptLogin() {
   if (!currentSeller) return;
-  if (pwdInput.value.trim() === currentSeller.password) {
-    const seller = currentSeller;   // salva referência ANTES de closeModal zerar currentSeller
+  if (pwdInput.value.trim() === getEffectivePassword(currentSeller)) {
+    const seller = currentSeller;
     closeModal();
     openDashboard(seller);
   } else {
@@ -1458,6 +1665,18 @@ function openDashboard(s) {
 
   document.getElementById('dashAvatar').textContent  = s.name[0];
   document.getElementById('dashName').textContent    = s.name;
+
+  // Se este vendedor está em férias, mostra aviso no header
+  const saveTarget = getEffectiveSaveTarget(s);
+  const feriasBanner = document.getElementById('feriasBanner');
+  if (feriasBanner) {
+    if (saveTarget !== s) {
+      feriasBanner.style.display = 'flex';
+      feriasBanner.innerHTML = `<span style="font-size:16px;">🏖</span> <span style="flex:1;"><strong>${s.name}</strong> está de férias. Dados serão salvos na aba de <strong>${saveTarget.name}</strong>.</span>`;
+    } else {
+      feriasBanner.style.display = 'none';
+    }
+  }
   const welcomeEl = document.getElementById('dashWelcome');
   if (welcomeEl) welcomeEl.textContent = s.name;
 
@@ -1472,10 +1691,13 @@ function openDashboard(s) {
     banner.style.display = isOldCache ? 'flex' : 'none';
   }
 
-  // Apenas linhas com GRUPO COMERCIAL preenchido
+  // Apenas linhas com GRUPO COMERCIAL preenchido e diferente de 0
   activeRows = (csvData[s.csvName] || []).filter(r => {
     const g = (r['GRUPO_  COMERCIAL'] || '').trim();
-    return g !== '' && g !== '0' && !isNaN(parseFloat(g)) ? true : (g !== '');
+    if (!g || g === '' ) return false;
+    const n = parseFloat(g.replace(',','.'));
+    if (!isNaN(n) && n === 0) return false; // exclui GC = 0
+    return true;
   });
 
   // Corrige campos automáticos
@@ -1542,7 +1764,7 @@ function renderStats(rows) {
   const todosOsDias = new Set();
   let somaContatos  = 0;
   rows.forEach(r => {
-    const dc = (r['DIAS_CONTATO']||'').split(/[;,]/).map(d=>d.trim()).filter(Boolean);
+    const dc = (r['DIAS_CONTATO']||'').split(/[;,-]/).map(d=>d.trim()).filter(Boolean);
     dc.forEach(d => todosOsDias.add(d));
     somaContatos += dc.length;
   });
@@ -1568,7 +1790,7 @@ function renderStats(rows) {
   // Contatos do dia (DIAS_CONTATO contém o dia de hoje)
   const hoje = new Date().getDate();
   const contatosHoje = rows.filter(r => {
-    const dias = (r['DIAS_CONTATO']||'').split(/[;,]/).map(d => parseInt(d.trim(),10));
+    const dias = (r['DIAS_CONTATO']||'').split(/[;,-]/).map(d => parseInt(d.trim(),10));
     return dias.includes(hoje);
   }).length;
 
@@ -1641,10 +1863,13 @@ function renderTable() {
   DISPLAY_COLS.forEach((c, ci) => {
     const frozenCls = FROZEN_KEYS.includes(c.key) ? ` col-frozen-${FROZEN_KEYS.indexOf(c.key)}` : '';
     const isSort    = sortCol === c.key;
-    const arrow     = isSort ? (sortDir === 1 ? ' ▲' : ' ▼') : ' ⇅';
-    const arrowStyle = isSort ? 'color:#fff;font-size:11px;' : 'color:#a0aec0;font-size:11px;';
+    const triUp   = `<svg width="7" height="5" viewBox="0 0 7 5"><polygon points="3.5,0 7,5 0,5" fill="${isSort && sortDir===1 ? '#1a3fa8' : '#9aa5c4'}"/></svg>`;
+    const triDown = `<svg width="7" height="5" viewBox="0 0 7 5"><polygon points="0,0 7,0 3.5,5" fill="${isSort && sortDir===-1 ? '#1a3fa8' : '#9aa5c4'}"/></svg>`;
     html += `<th class="${frozenCls}" style="cursor:pointer;user-select:none;white-space:nowrap;" onclick="setSort('${c.key.replace(/'/g,"\\'")}')">
-      ${c.label}<span style="${arrowStyle}">${arrow}</span>
+      <div style="display:inline-flex;align-items:center;gap:5px;vertical-align:middle;">
+        ${c.label}
+        <div style="display:flex;flex-direction:column;gap:2px;">${triUp}${triDown}</div>
+      </div>
     </th>`;
   });
   html += `</tr></thead><tbody>`;
@@ -1789,7 +2014,7 @@ function renderTable() {
 
         } else if (col.key === 'EM CONTATO') {
           const hoje = new Date().getDate();
-          const diasContato = (row['DIAS_CONTATO']||'').split(/[;,]/).map(d => parseInt(d.trim(),10)).filter(Boolean);
+          const diasContato = (row['DIAS_CONTATO']||'').split(/[;,-]/).map(d => parseInt(d.trim(),10)).filter(Boolean);
           const contatoHoje = diasContato.includes(hoje);
           html += `<td style="padding:4px 8px !important;white-space:nowrap;">
             <div class="contato-btns">
@@ -2096,8 +2321,8 @@ function applyFilters() {
 
       // Colunas com dias separados por ; ou , — ordena pela quantidade
       if (sortCol === 'DIAS_VENDA' || sortCol === 'DIAS_CONTATO') {
-        const an = av ? av.split(/[;,]/).filter(Boolean).length : 0;
-        const bn = bv ? bv.split(/[;,]/).filter(Boolean).length : 0;
+        const an = av ? av.split(/[;,-]/).filter(Boolean).length : 0;
+        const bn = bv ? bv.split(/[;,-]/).filter(Boolean).length : 0;
         return (an - bn) * sortDir;
       }
 
@@ -2290,6 +2515,11 @@ function addNewClient() {
   newRow['CARTEIRA'] = 'SIM';
   newRow['CLUSTER']  = 'DEMAIS';
 
+  // Insere no csvData para persistência
+  if (activeSeller && csvData[activeSeller.csvName]) {
+    csvData[activeSeller.csvName].unshift(newRow);
+  }
+
   // Insere no topo de activeRows e filteredRows
   activeRows.unshift(newRow);
   filteredRows.unshift(newRow);
@@ -2413,12 +2643,20 @@ function _buildPainel(sourceHTML) {
 
     // 3. Injeta dados no SENTINEL — único ponto seguro que não existe em nenhuma string JS
     const SENTINEL = '<!--__PMG_PRELOAD_SLOT__-->';
+    // Serializa senhasFerias convertendo Date para ISO string
+    const senhasFeriasSerial = senhasFerias.map(r => ({
+      vendedor: r.vendedor,
+      substituto: r.substituto,
+      de:  r.de  ? r.de.toISOString()  : null,
+      ate: r.ate ? r.ate.toISOString() : null,
+    }));
     const dataScript = '<scr' + 'ipt>(function(){window.__PMG_DATA__='
       + dataSnapshot
       + ';window.__PMG_META__=' + JSON.stringify(sellerMeta)
       + ';window.__PMG_METAP__=' + JSON.stringify(sellerMetaPosit)
       + ';window.__PMG_3ULT__=' + JSON.stringify(ultComprasData)
       + ';window.__PMG_CADASTRO__=' + JSON.stringify(cadastroData)
+      + ';window.__PMG_FERIAS__=' + JSON.stringify(senhasFeriasSerial)
       + ';window.__PMG_DATE__=\'' + dateFmt + '\';window.__PMG_IS_PAINEL__=true;})()</scr' + 'ipt>';
     sourceHTML = sourceHTML.replace(SENTINEL, dataScript);
 
@@ -2568,9 +2806,8 @@ function _startVendasV1Monitor() {
 function _applyVendasV1(rows) {
   if (!activeSeller) return;
 
-  // Persiste dados atuais antes de qualquer modificação (preserva contatos)
-  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-  saveSellerData(activeSeller.csvName);
+  // Persiste dados atuais IMEDIATAMENTE antes de qualquer modificação
+  _flushPendingData();
 
   // Monta diarioMap igual ao parseDiario
   const diarioMap = {};
@@ -2668,10 +2905,12 @@ function _applyVendasV1(rows) {
   });
 
   // Atualiza activeRows e re-renderiza sem chamar openDashboard
-  // (evita loop e perda de linhas _isNew)
   activeRows = (csvData[s.csvName] || []).filter(r => {
     const g = (r['GRUPO_  COMERCIAL'] || '').trim();
-    return g !== '' && g !== '0' && !isNaN(parseFloat(g)) ? true : (g !== '');
+    if (!g || g === '') return false;
+    const n = parseFloat(g.replace(',','.'));
+    if (!isNaN(n) && n === 0) return false;
+    return true;
   });
   activeRows.forEach(r => {
     const fat = parseFloat(String(r['FATURAMENTO'] || '0').replace(',','.')) || 0;
@@ -2765,9 +3004,22 @@ function _processSheetsData(data, btn, statusEl) {
     'EM CONTATO':  'EM CONTATO',
     'DIAS CONTATO':'DIAS_CONTATO',
     'NÃO VENDA':   'NÃO VENDA',
+    'NAO VENDA':   'NÃO VENDA',
+    'NÂO VENDA':   'NÃO VENDA',
     'MOTIVO':      'MOTIVO (NÃO VENDA)',
     'OBSERVAÇÕES': 'OBSERVAÇÕES (PREENCHIMENTO LIVRE)',
+    'OBSERVACOES': 'OBSERVAÇÕES (PREENCHIMENTO LIVRE)',
   };
+
+  // Função para encontrar valor no sheetsRow ignorando variações de acentuação
+  function getSheetVal(sheetsRow, key) {
+    if (sheetsRow[key] !== undefined) return sheetsRow[key];
+    // Tenta normalizar: remove acentos e compara
+    const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+    const keyNorm = norm(key);
+    const found = Object.keys(sheetsRow).find(k => norm(k) === keyNorm);
+    return found !== undefined ? sheetsRow[found] : undefined;
+  }
 
   let totalLinhas = 0;
 
@@ -2778,11 +3030,17 @@ function _processSheetsData(data, btn, statusEl) {
     if (!sheetsRows || sheetsRows.length === 0) return;
     if (!csvData[seller.csvName]) csvData[seller.csvName] = [];
 
+    // Filtra apenas a linha mais recente por GC (última no array = mais recente)
+    const latestByGC = {};
     sheetsRows.forEach(sheetsRow => {
       const grpRaw = String(sheetsRow['GRUPO COMERCIAL'] || '').trim();
       const grpN   = parseFloat(grpRaw.replace(',', '.'));
       const codGC  = isNaN(grpN) ? grpRaw : String(Math.round(grpN));
       if (!codGC) return;
+      latestByGC[codGC] = sheetsRow; // sobrescreve — fica com a última
+    });
+
+    Object.entries(latestByGC).forEach(([codGC, sheetsRow]) => {
 
       let existing = csvData[seller.csvName].find(r => {
         const g = (r['GRUPO_  COMERCIAL'] || '').trim();
@@ -2793,7 +3051,7 @@ function _processSheetsData(data, btn, statusEl) {
       if (existing) {
         Object.keys(CAMPOS_MAP).forEach(sheetCol => {
           const csvCol = CAMPOS_MAP[sheetCol];
-          let v = sheetsRow[sheetCol];
+          let v = getSheetVal(sheetsRow, sheetCol);
           if (v === undefined || v === '') return;
           if (csvCol === 'DIAS_CONTATO') v = _cleanDias(v);
           existing[csvCol] = v;
@@ -2812,7 +3070,8 @@ function _processSheetsData(data, btn, statusEl) {
         newRow['CARTEIRA']          = 'SIM';
         Object.keys(CAMPOS_MAP).forEach(sheetCol => {
           const csvCol = CAMPOS_MAP[sheetCol];
-          if (sheetsRow[sheetCol] !== undefined && sheetsRow[sheetCol] !== '') newRow[csvCol] = sheetsRow[sheetCol];
+          const v = getSheetVal(sheetsRow, sheetCol);
+          if (v !== undefined && v !== '') newRow[csvCol] = v;
         });
         csvData[seller.csvName].push(newRow);
       }
@@ -2906,7 +3165,7 @@ function onContatoBtn(btn) {
 
   const hoje = new Date().getDate();
   const diasAtual = (row['DIAS_CONTATO'] || '').trim();
-  const lista = diasAtual ? diasAtual.split(/[;,]/).map(d => d.trim()).filter(Boolean) : [];
+  const lista = diasAtual ? diasAtual.split(/[;,-]/).map(d => d.trim()).filter(Boolean) : [];
   const jaTemHoje = lista.includes(String(hoje));
 
   if (jaTemHoje) {
@@ -3110,6 +3369,14 @@ function scheduleSave() {
   saveTimer = setTimeout(() => saveSellerData(activeSeller.csvName), 800);
 }
 
+// Força save imediato cancelando o debounce — chame antes de qualquer operação crítica
+function _flushPendingData() {
+  if (!activeSeller) return;
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  saveSellerData(activeSeller.csvName);
+}
+
 // ─────────────────────────────────────────────
 // SALVAR PAINEL DO VENDEDOR — Google Sheets
 // ─────────────────────────────────────────────
@@ -3144,16 +3411,21 @@ document.getElementById('btnVendedorSalvar').addEventListener('click', async () 
 
       // Envia TODOS os dados em uma única requisição POST via form+iframe
       // (sem limite de tamanho, funciona com no-cors de qualquer origem)
+      const saveTarget = getEffectiveSaveTarget(activeSeller);
+      const isSubstituto = saveTarget !== activeSeller;
+
       const allData = {
-        v:    activeSeller.name,
-        d:    dateFmt,
+        v:      saveTarget.name,
+        d:      dateFmt,
+        origem: isSubstituto ? activeSeller.name : saveTarget.name, // identifica a carteira de origem
         rows: rowsToSend.map(r => {
           const grpRaw  = (r['GRUPO_  COMERCIAL']||'').trim();
           const grpN    = parseFloat(grpRaw.replace(',','.'));
           const grp     = isNaN(grpN) ? grpRaw : String(Math.round(grpN));
           const fatN    = parseFloat((r['FATURAMENTO']||'0').replace(',','.')) || 0;
-          const metaN   = parseFloat((r['META FAT']||'0').replace(',','.')) || 0;
-          const metaPosit = activeSeller ? (sellerMetaPosit[activeSeller.csvName] || 0) : 0;
+          // Se é substituto, zera META_FAT e META_POSIT
+          const metaN    = isSubstituto ? 0 : (parseFloat((r['META FAT']||'0').replace(',','.')) || 0);
+          const metaPosit = isSubstituto ? 0 : (activeSeller ? (sellerMetaPosit[activeSeller.csvName] || 0) : 0);
           const rowStr = [
             grp,
             (r['NOME_GC']||''),
@@ -3176,10 +3448,23 @@ document.getElementById('btnVendedorSalvar').addEventListener('click', async () 
         }).join('§')
       };
 
-      // Guarda payload e vendedor ativo no sessionStorage e recarrega (hard reload)
+      // Persiste dados locais imediatamente antes do reload
+      _flushPendingData();
+
+      // Guarda payload, vendedor e snapshot completo do csvData no sessionStorage
       try {
         sessionStorage.setItem('pmg_pending_save', JSON.stringify(allData));
         sessionStorage.setItem('pmg_pending_seller', activeSeller.csvName);
+        // Guarda snapshot dos campos preenchidos para restaurar após reload
+        const snapshot = (csvData[activeSeller.csvName] || []).map(row => {
+          const grpRaw = (row['GRUPO_  COMERCIAL'] || '').trim();
+          const grpN   = parseFloat(grpRaw.replace(',','.'));
+          const codGC  = isNaN(grpN) ? grpRaw : String(Math.round(grpN));
+          const entry  = { _codGC: codGC, _estado: (row['ESTADO']||'').trim() };
+          PERSIST_FIELDS.forEach(f => { if (row[f] !== undefined) entry[f] = row[f]; });
+          return entry;
+        });
+        sessionStorage.setItem('pmg_pending_data', JSON.stringify(snapshot));
       } catch(ex) { console.warn('sessionStorage error', ex); }
 
       btn.innerHTML = `⏳ Preparando...`;
@@ -3305,6 +3590,17 @@ if (window.__PMG_IS_PAINEL__) {
       if (attempt < 20) setTimeout(() => tryAutoSave(attempt + 1), 200);
       return;
     }
+
+    // Restaura snapshot do sessionStorage no localStorage antes de abrir o dashboard
+    const snapRaw = sessionStorage.getItem('pmg_pending_data');
+    if (snapRaw) {
+      try {
+        sessionStorage.removeItem('pmg_pending_data');
+        localStorage.setItem('pmg2_' + sellerName, snapRaw);
+        localStorage.setItem('pmg_saveDate_' + sellerName, new Date().toDateString());
+      } catch(ex) { console.warn('snapshot restore error', ex); }
+    }
+
     // Reabre o dashboard do vendedor sem pedir senha (já estava logado)
     if (typeof openDashboard === 'function') openDashboard(seller);
 
