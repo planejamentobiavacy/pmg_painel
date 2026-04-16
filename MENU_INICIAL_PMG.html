@@ -138,7 +138,7 @@
   .welcome-card p { font-size:12px; color:var(--text-light); font-weight:600; }
 
   /* stats */
-  .stats-row { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:10px; flex-shrink:0; }
+  .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:10px; flex-shrink:0; }
   .stat-card { background:var(--white); border-radius:10px; padding:10px 14px; box-shadow:0 4px 16px var(--shadow); display:flex; align-items:center; gap:10px; }
   .stat-icon { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
   .stat-icon.blue  { background:rgba(26,63,168,.1); }
@@ -660,6 +660,7 @@ const DISPLAY_COLS = [
 
 // Global CSV store
 let ultComprasData = (typeof window.__PMG_3ULT__      !== 'undefined') ? window.__PMG_3ULT__      : {};
+let fatHavaData    = {}; // csvName → fatHava total MTD
 let cadastroData   = (typeof window.__PMG_CADASTRO__  !== 'undefined') ? window.__PMG_CADASTRO__  : {}; // codGC → {tel, email, contato}
 // Carrega dados pré-embutidos pelo Salvar Painel, se existirem
 let csvData = (typeof window.__PMG_DATA__ !== 'undefined') ? window.__PMG_DATA__ : {};
@@ -1819,6 +1820,18 @@ function renderStats(rows) {
     <div class="stat-card"><div class="stat-icon orange">📞</div><div class="stat-info"><div class="stat-value">${contatosHoje}</div><div class="stat-label">Contatos do Dia</div></div></div>
     <div class="stat-card"><div class="stat-icon orange">📊</div><div class="stat-info"><div class="stat-value">${mediaContatos}</div><div class="stat-label">Média Contatos/Dia</div></div></div>
     <div class="stat-card"><div class="stat-icon red">❌</div><div class="stat-info"><div class="stat-value">${naoVenda}</div><div class="stat-label">Não Venda</div></div></div>
+    ${(function(){
+      const fatHava = activeSeller ? (fatHavaData[activeSeller.csvName] || 0) : 0;
+      if (fatHava <= 0) return '';
+      const fatTot = activeSeller ? (fatTotal || 0) : 0;
+      const shareHava = fatTot > 0 ? Math.round((fatHava / fatTot) * 100) : 0;
+      const fatHavaFmt = 'R$ ' + Math.round(fatHava).toLocaleString('pt-BR');
+      return `<div class="stat-card"><div class="stat-icon" style="background:rgba(0,150,200,.12);">🩴</div><div class="stat-info">
+        <div class="stat-value" style="font-size:14px;">${fatHavaFmt}</div>
+        <div style="font-size:11px;font-weight:700;color:#0096c8;margin-top:2px;">${shareHava}% do fat. total</div>
+        <div class="stat-label">Fat. Hava</div>
+      </div></div>`;
+    })()}
   `;
 }
 
@@ -2886,9 +2899,16 @@ function _applyVendasV1(rows) {
 
     const key = seller.csvName;
     if (!diarioMap[key]) diarioMap[key] = {};
-    if (!diarioMap[key][codGC]) diarioMap[key][codGC] = { fat:0, clientesLoja: new Set(), dias: new Set(), nomeCliente: '' };
+    if (!diarioMap[key][codGC]) diarioMap[key][codGC] = { fat:0, fatHava:0, clientesLoja: new Set(), dias: new Set(), nomeCliente: '' };
 
     diarioMap[key][codGC].fat += fat;
+
+    // Acumula faturamento Hava
+    const fatHavaRaw = String(row['FATURAMENTO_HAVA'] || '0').trim();
+    const fatHavaStr = fatHavaRaw.includes(',')
+      ? fatHavaRaw.replace(/\./g,'').replace(',','.')
+      : fatHavaRaw.replace(/\.(?=\d{3}(?:[^\d]|$))/g,'');
+    diarioMap[key][codGC].fatHava += parseFloat(fatHavaStr) || 0;
     const codCliLoja = String(row['COD_CLIENTE_LOJA'] || '').trim();
     if (codCliLoja && fatPos === '1') diarioMap[key][codGC].clientesLoja.add(codCliLoja);
 
@@ -2905,6 +2925,9 @@ function _applyVendasV1(rows) {
   const s   = activeSeller;
   const map = diarioMap[s.csvName] || {};
   const existingRows = csvData[s.csvName] || [];
+
+  // Totaliza fatHava para o seller ativo
+  fatHavaData[s.csvName] = Object.values(map).reduce((acc, d) => acc + (d.fatHava || 0), 0);
 
   // Zera fat/posit nas linhas existentes antes de reaplicar
   // Não toca em _isNew para preservar clientes adicionados manualmente
