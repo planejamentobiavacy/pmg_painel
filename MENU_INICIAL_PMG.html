@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -326,6 +326,14 @@
     .dash-user-name{display:none;}
   }
 </style>
+
+<!--[if gte mso 9]><xml>
+<mso:CustomDocumentProperties>
+<mso:_dlc_DocId msdt:dt="string">FJE6U6Z5HCNH-1878088104-2822977</mso:_dlc_DocId>
+<mso:_dlc_DocIdItemGuid msdt:dt="string">7ecda7c2-de6a-4b07-a6ca-947e3f3b7a15</mso:_dlc_DocIdItemGuid>
+<mso:_dlc_DocIdUrl msdt:dt="string">https://avacycomercio.sharepoint.com/sites/Documentos/_layouts/15/DocIdRedir.aspx?ID=FJE6U6Z5HCNH-1878088104-2822977, FJE6U6Z5HCNH-1878088104-2822977</mso:_dlc_DocIdUrl>
+</mso:CustomDocumentProperties>
+</xml><![endif]-->
 </head>
 <body>
 
@@ -362,12 +370,189 @@
 
   <input type="file" id="csvFileInput"   accept=".csv" style="display:none;">
   <input type="file" id="csvDiarioInput" accept=".csv" style="display:none;">
+  <input type="file" id="csvPriorizacaoInput" accept=".csv,.txt" style="display:none;">
+  <input type="file" id="csvRecomendacoesInput" accept=".csv,.txt" style="display:none;">
+  <script>
+    // Esta versão é o ARQUIVO-MÃE/ADMIN.
+    // Ela pode carregar dados da automação, mas NÃO deve entrar direto no painel.
+    // A versão gerada pelo botão Salvar Painel libera a entrada automática via __PMG_FINAL_PANEL__.
+    window.__PMG_ADMIN_EDITOR__ = true;
+
+    (function(){
+      /*
+        Leitor automático das bases geradas pelo Python — versão mais tolerante.
+
+        Principais mudanças:
+        1) Tenta carregar primeiro os arquivos split, depois data_local.js.
+        2) Remove timeout curto; bases grandes podem demorar vários segundos/minutos.
+        3) Não coloca ?v= no caminho, pois isso pode atrapalhar arquivo local file://.
+        4) Usa URL absoluta file:///C:/... e caminhos relativos ao local do HTML.
+        5) Mostra cada tentativa no canto inferior esquerdo e no console.
+      */
+
+      const ABS_DADOS = 'file:///C:/Users/PedroHenrique/Avacy/Avacy%20-%20Documentos/Planejamento/PLANEJAMENTO_BI/PMG%204.0/dados/';
+
+      const ROOTS = [
+        './dados/',
+        '../dados/',
+        '../../dados/',
+        '../../../dados/',
+        './',
+        ABS_DADOS
+      ];
+
+      const SPLIT_FILES = ['data_base.js', 'data_ult3.js', 'data_priority.js', 'data_reco.js'];
+      const SPLIT_FILES_NO_EXT = ['data_base', 'data_ult3', 'data_priority', 'data_reco'];
+      const LEGACY_FILES = ['data_local.js', 'data_local'];
+
+      function ensureStatusBox() {
+        let box = document.getElementById('__pmgAutoLoadStatus__');
+        if (box) return box;
+        box = document.createElement('div');
+        box.id = '__pmgAutoLoadStatus__';
+        box.style.cssText = [
+          'position:fixed', 'left:12px', 'bottom:12px', 'z-index:999999',
+          'max-width:820px', 'padding:10px 12px', 'border-radius:10px',
+          'font-family:Arial,sans-serif', 'font-size:12px', 'line-height:1.35',
+          'background:#fff7df', 'color:#3b2b00', 'border:1px solid #e8c665',
+          'box-shadow:0 8px 30px rgba(0,0,0,.18)', 'white-space:normal'
+        ].join(';');
+        box.textContent = 'PMG: procurando arquivos da automação...';
+        const add = () => document.body && document.body.appendChild(box);
+        if (document.body) add();
+        else document.addEventListener('DOMContentLoaded', add, { once:true });
+        return box;
+      }
+
+      function setStatus(msg, ok) {
+        console.log('[PMG AUTOLOAD]', msg);
+        const box = ensureStatusBox();
+        box.textContent = msg;
+        if (ok === true) {
+          box.style.background = '#eaf8ef';
+          box.style.borderColor = '#22a05a';
+          box.style.color = '#064b25';
+          setTimeout(() => { if (box && box.parentNode) box.remove(); }, 5000);
+        } else if (ok === false) {
+          box.style.background = '#fff0f0';
+          box.style.borderColor = '#e84040';
+          box.style.color = '#7a1111';
+        } else {
+          box.style.background = '#fff7df';
+          box.style.borderColor = '#e8c665';
+          box.style.color = '#3b2b00';
+        }
+      }
+
+      function dispatchStatus(ok, mode, path, error) {
+        window.__PMG_AUTO_DATA_READY__ = !!ok;
+        window.__PMG_EXTERNAL_DATA_STATUS__ = { loaded: !!ok, mode: mode || '', path: path || '', error: error || '' };
+        document.dispatchEvent(new CustomEvent('pmg:data-local-loaded', { detail: window.__PMG_EXTERNAL_DATA_STATUS__ }));
+      }
+
+      function toUrl(path) {
+        try {
+          if (/^file:\/\//i.test(path) || /^https?:\/\//i.test(path)) return path;
+          return new URL(path, document.baseURI).href;
+        } catch (e) {
+          return path;
+        }
+      }
+
+      function loadScript(path) {
+        return new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          const finalUrl = toUrl(path);
+          script.src = finalUrl;
+          script.async = false;
+          script.onload = () => resolve(finalUrl);
+          script.onerror = () => {
+            script.remove();
+            reject(new Error('erro ao carregar: ' + finalUrl));
+          };
+          document.head.appendChild(script);
+        });
+      }
+
+      function hasAnyPayload() {
+        return !!(
+          window.__PMG_DATA__ ||
+          window.__PMG_3ULT__ ||
+          window.__PMG_PRIORITY__ ||
+          window.__PMG_RECO__ ||
+          window.__PMG_CADASTRO__ ||
+          window.__PMG_PASSWORDS__ ||
+          window.__PMG_FERIAS__
+        );
+      }
+
+      async function trySplit(files, label) {
+        for (const root of ROOTS) {
+          const paths = files.map(file => root + file);
+          setStatus('PMG: tentando carregar ' + label + ' em: ' + toUrl(root), null);
+          try {
+            for (const path of paths) {
+              setStatus('PMG: carregando ' + toUrl(path), null);
+              await loadScript(path);
+            }
+            if (hasAnyPayload()) {
+              // Dados externos carregados: mantém o modo admin aberto para permitir atualizar G.Sheets e salvar a versão final.
+              window.__PMG_EXTERNAL_READY__ = true;
+              setStatus('PMG: bases carregadas. Agora você pode importar G.Sheets e clicar em Salvar Painel.', true);
+              dispatchStatus(true, label, toUrl(root), '');
+              return true;
+            }
+          } catch (e) {
+            console.warn('[PMG AUTOLOAD] falhou em', root, e);
+          }
+        }
+        return false;
+      }
+
+      async function tryLegacy() {
+        for (const root of ROOTS) {
+          for (const file of LEGACY_FILES) {
+            const path = root + file;
+            setStatus('PMG: tentando carregar base consolidada: ' + toUrl(path), null);
+            try {
+              await loadScript(path);
+              if (hasAnyPayload()) {
+                // Dados externos carregados: mantém o modo admin aberto para permitir atualizar G.Sheets e salvar a versão final.
+                window.__PMG_EXTERNAL_READY__ = true;
+                setStatus('PMG: base consolidada carregada. Agora você pode importar G.Sheets e clicar em Salvar Painel.', true);
+                dispatchStatus(true, 'data_local', toUrl(path), '');
+                return true;
+              }
+            } catch (e) {
+              console.warn('[PMG AUTOLOAD] falhou em', path, e);
+            }
+          }
+        }
+        return false;
+      }
+
+      (async function startAutoLoad(){
+        setStatus('PMG: iniciando leitura automática. HTML em: ' + document.baseURI, null);
+
+        // Primeiro tenta os arquivos menores/separados.
+        if (await trySplit(SPLIT_FILES, 'split .js')) return;
+        if (await trySplit(SPLIT_FILES_NO_EXT, 'split sem extensão')) return;
+
+        // Depois tenta o arquivo único, que pode ser maior.
+        if (await tryLegacy()) return;
+
+        const msg = 'PMG: não consegui carregar automaticamente. O HTML está em: ' + document.baseURI + ' | Tente deixar este HTML dentro da pasta PMG 4.0/app ou PMG 4.0, com os dados em PMG 4.0/dados. Arquivos esperados: data_base.js, data_ult3.js, data_priority.js, data_reco.js e/ou data_local.js.';
+        setStatus(msg, false);
+        dispatchStatus(false, 'none', '', msg);
+      })();
+    })();
+  </script>
   <!--__PMG_PRELOAD_SLOT__-->
 
   <div class="grid-wrapper" id="__adminBlock__">
     <!-- Instrução -->
     <p style="text-align:center;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:600;color:var(--text-mid);margin-bottom:28px;line-height:1.7;">
-      Importe o CSV base → clique em <strong>📊 Importar G.Sheets</strong> → clique em <strong>💾 Salvar Painel</strong>
+      Bases da automação carregam sozinhas, mas esta tela fica em modo edição → clique em <strong>📊 Importar G.Sheets</strong> → clique em <strong>💾 Salvar Painel</strong>
     </p>
 
     <!-- Botões de ação centralizados -->
@@ -386,6 +571,14 @@
 
       <button id="btnImport3Ult" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#7b2ff7,#5a0fc8);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(123,47,247,.3);transition:transform .15s,box-shadow .2s;">
         <span style="font-size:16px;">🛒</span> CSV 3 Últ.
+      </button>
+
+      <button id="btnImportPriorizacaoSQL" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#f0a500,#c47d00);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(240,165,0,.28);transition:transform .15s,box-shadow .2s;">
+        <span style="font-size:16px;">🎯</span> Priorização SQL
+      </button>
+
+      <button id="btnImportRecomendacoesSQL" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#0c7a42,#095d31);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(12,122,66,.28);transition:transform .15s,box-shadow .2s;">
+        <span style="font-size:16px;">⭐</span> Recomendações SQL
       </button>
 
       <button id="btnImportCadastro" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#0a7eb4,#055a82);border:none;border-radius:8px;padding:13px 24px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(10,126,180,.3);transition:transform .15s,box-shadow .2s;">
@@ -584,6 +777,119 @@ const allSellers = [...sellers, ...sellersDev, ...sellersHava];
 // Estrutura: [{ vendedor, senha, substituto, de, ate }]
 let senhasFerias = [];
 
+function normalizeSellerKey(value) {
+  return String(value || '').trim().toUpperCase().replace(/\s+/g, ' ');
+}
+
+function applyLoadedPasswords(passwordMap) {
+  if (!passwordMap || typeof passwordMap !== 'object') return 0;
+  const normalized = {};
+  Object.keys(passwordMap).forEach(key => {
+    const norm = normalizeSellerKey(key);
+    if (norm) normalized[norm] = String(passwordMap[key] || '').trim();
+  });
+
+  let total = 0;
+  allSellers.forEach(s => {
+    const senha = normalized[normalizeSellerKey(s.csvName)] || normalized[normalizeSellerKey(s.name)];
+    if (senha) {
+      s.password = senha;
+      total++;
+    }
+  });
+  return total;
+}
+
+function applyUltComprasToCsvData() {
+  if (!ultComprasData || Object.keys(ultComprasData).length === 0) return;
+  allSellers.forEach(s => {
+    (csvData[s.csvName] || []).forEach(row => {
+      const g = (row['GRUPO_  COMERCIAL'] || '').trim();
+      const n = parseFloat(g.replace(',', '.'));
+      const codGC = isNaN(n) ? g.replace(/^0+/, '') : String(Math.round(n));
+      const entries = ultComprasData[codGC];
+      if (entries && entries.length > 0) {
+        row['DT_ULT_COMPRA'] = entries[0].ultData || '';
+      }
+    });
+  });
+}
+
+function setLoadedButtonState(buttonId, html, background) {
+  const btn = document.getElementById(buttonId);
+  if (!btn) return;
+  btn.innerHTML = html;
+  btn.style.background = background;
+  btn.style.boxShadow = 'none';
+}
+
+function applyPreloadedAutomationData() {
+  const hasPayload =
+    typeof window.__PMG_DATA__ !== 'undefined' ||
+    typeof window.__PMG_3ULT__ !== 'undefined' ||
+    typeof window.__PMG_PRIORITY__ !== 'undefined' ||
+    typeof window.__PMG_RECO__ !== 'undefined' ||
+    typeof window.__PMG_CADASTRO__ !== 'undefined' ||
+    typeof window.__PMG_FERIAS__ !== 'undefined' ||
+    typeof window.__PMG_PASSWORDS__ !== 'undefined';
+
+  if (!hasPayload) return;
+
+  if (window.__PMG_DATA__ && typeof window.__PMG_DATA__ === 'object') csvData = window.__PMG_DATA__;
+  if (window.__PMG_META__ && typeof window.__PMG_META__ === 'object') sellerMeta = window.__PMG_META__;
+  if (window.__PMG_METAP__ && typeof window.__PMG_METAP__ === 'object') sellerMetaPosit = window.__PMG_METAP__;
+  if (window.__PMG_3ULT__ && typeof window.__PMG_3ULT__ === 'object') ultComprasData = window.__PMG_3ULT__;
+  if (window.__PMG_PRIORITY__ && typeof window.__PMG_PRIORITY__ === 'object') prioritySqlData = window.__PMG_PRIORITY__;
+  if (window.__PMG_RECO__ && typeof window.__PMG_RECO__ === 'object') recommendationSqlData = window.__PMG_RECO__;
+  if (window.__PMG_CADASTRO__ && typeof window.__PMG_CADASTRO__ === 'object') cadastroData = window.__PMG_CADASTRO__;
+
+  if (Array.isArray(window.__PMG_FERIAS__)) {
+    senhasFerias = window.__PMG_FERIAS__.map(r => ({
+      vendedor: String(r.vendedor || '').toUpperCase(),
+      substituto: String(r.substituto || '').toUpperCase(),
+      de:  r.de  ? new Date(r.de)  : null,
+      ate: r.ate ? new Date(r.ate) : null,
+    })).filter(r => r.vendedor && r.substituto && r.de && r.ate && !isNaN(r.de) && !isNaN(r.ate));
+  }
+
+  const totalSenhas = applyLoadedPasswords(window.__PMG_PASSWORDS__ || {});
+
+  allSellers.forEach(s => {
+    if (!csvData[s.csvName]) csvData[s.csvName] = [];
+  });
+
+  normalizePrioritySqlDataMap();
+  normalizeRecommendationSqlDataMap();
+  if (Object.keys(cadastroData).length > 0) _applyCadastroToCsvData();
+  if (Object.keys(ultComprasData).length > 0) applyUltComprasToCsvData();
+  if (Object.keys(prioritySqlData).length > 0) mergePriorityIntoCsvData();
+  invalidateProductPhotoLookup();
+
+  const totalBase = Object.values(csvData || {}).reduce((acc, arr) => acc + ((arr && arr.length) || 0), 0);
+  const total3Ult = Object.keys(ultComprasData || {}).length;
+  const totalPri  = Object.keys(prioritySqlData || {}).length;
+  const totalReco = Object.values(recommendationSqlData || {}).reduce((acc, arr) => acc + ((arr && arr.length) || 0), 0);
+  const totalCad  = Object.keys(cadastroData || {}).length;
+  const totalFerias = (senhasFerias || []).length;
+
+  if (totalBase > 0) setLoadedButtonState('btnImportCSV', `<span class="exp-icon">✅</span> ${totalBase} registros`, 'rgba(16,145,80,.5)');
+  if (total3Ult > 0) setLoadedButtonState('btnImport3Ult', `<span style="font-size:16px;">✅</span> ${total3Ult} grupos`, 'rgba(123,47,247,.4)');
+  if (totalPri > 0) setLoadedButtonState('btnImportPriorizacaoSQL', `<span style="font-size:16px;">✅</span> ${totalPri} prioridades`, 'linear-gradient(135deg,#109150,#0c7a44)');
+  if (totalReco > 0) setLoadedButtonState('btnImportRecomendacoesSQL', `<span style="font-size:16px;">✅</span> ${totalReco} recomendações`, 'linear-gradient(135deg,#109150,#0c7a44)');
+  if (totalCad > 0) setLoadedButtonState('btnImportCadastro', `<span style="font-size:16px;">✅</span> ${totalCad} grupos`, 'rgba(10,126,180,.4)');
+  if (totalSenhas > 0 || totalFerias > 0) {
+    setLoadedButtonState('btnImportSenhasFerias', `<span style="font-size:16px;">✅</span> ${totalSenhas} senhas${totalFerias > 0 ? ` · ${totalFerias} férias` : ''}`, 'linear-gradient(135deg,#109150,#0c7a44)');
+  }
+
+  // Mantém o modo admin aberto quando os dados vêm da automação externa,
+  // para dar tempo de importar G.Sheets e gerar a versão final pelo botão Salvar Painel.
+  // A versão final salva continua ativando o painel porque vem com window.__PMG_IS_PAINEL__ = true.
+
+  if (activeSeller) {
+    openDashboard(activeSeller);
+  }
+}
+
 // Restaura férias embutidas pelo Salvar Painel (converte ISO string → Date)
 if (typeof window.__PMG_FERIAS__ !== 'undefined' && Array.isArray(window.__PMG_FERIAS__) && window.__PMG_FERIAS__.length > 0) {
   senhasFerias = window.__PMG_FERIAS__.map(r => ({
@@ -635,7 +941,13 @@ const DISPLAY_COLS = [
   { key:'GRUPO_  COMERCIAL', label:'Grupo Comercial' },
   { key:'CONTATO',           label:'Contato'         },
   { key:'TELEFONE',          label:'WhatsApp'        },
-  { key:'DT_ULT_COMPRA',    label:'Dias s/ Venda'   },
+  { key:'DATA_ULTIMA_COMPRA_DISPLAY', label:'Últ. Compra' },
+  { key:'DT_ULT_COMPRA',     label:'Dias s/ Venda'   },
+  { key:'PRIORIDADE_SQL',    label:'Prioridade'      },
+  { key:'ULTIMO_CONTATO_DATA', label:'Últ. Contato'  },
+  { key:'STATUS_PRAZO_SQL',  label:'Status Prazo'    },
+  { key:'PRAZO_PRIORIZACAO_DIAS', label:'Prazo Usado' },
+  { key:'DATA_PROXIMO_PEDIDO_SQL', label:'Próx. Compra' },
   { key:'CARTEIRA',          label:'Carteira'        },
   { key:'EM CONTATO',        label:'Em Contato'      },
   { key:'DIAS_CONTATO',      label:'Dias Contato'    },
@@ -659,13 +971,16 @@ const DISPLAY_COLS = [
 ];
 
 // Global CSV store
-let ultComprasData = (typeof window.__PMG_3ULT__      !== 'undefined') ? window.__PMG_3ULT__      : {};
-let fatHavaData    = {}; // csvName → fatHava total MTD
-let cadastroData   = (typeof window.__PMG_CADASTRO__  !== 'undefined') ? window.__PMG_CADASTRO__  : {}; // codGC → {tel, email, contato}
+let ultComprasData     = (typeof window.__PMG_3ULT__      !== 'undefined') ? window.__PMG_3ULT__      : {};
+let prioritySqlData  = (typeof window.__PMG_PRIORITY__ !== 'undefined') ? window.__PMG_PRIORITY__ : {};
+let recommendationSqlData = (typeof window.__PMG_RECO__ !== 'undefined') ? window.__PMG_RECO__ : {};
+let fatHavaData      = {}; // csvName → fatHava total MTD
+let cadastroData     = (typeof window.__PMG_CADASTRO__  !== 'undefined') ? window.__PMG_CADASTRO__  : {}; // codGC → {tel, email, contato}
 // Carrega dados pré-embutidos pelo Salvar Painel, se existirem
 let csvData = (typeof window.__PMG_DATA__ !== 'undefined') ? window.__PMG_DATA__ : {};
 let sellerMeta      = (typeof window.__PMG_META__  !== 'undefined') ? window.__PMG_META__  : {};
 let sellerMetaPosit = (typeof window.__PMG_METAP__ !== 'undefined') ? window.__PMG_METAP__ : {};
+if (Object.keys(prioritySqlData).length > 0 && Object.keys(csvData).length > 0) mergePriorityIntoCsvData();
 
 let csvFileName = '';
 
@@ -812,6 +1127,32 @@ document.getElementById('btnImport3Ult').addEventListener('click', () => {
   inp.click();
 });
 
+document.getElementById('btnImportPriorizacaoSQL').addEventListener('click', () => {
+  document.getElementById('csvPriorizacaoInput').click();
+});
+
+document.getElementById('csvPriorizacaoInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => parsePriorizacaoSQL(ev.target.result);
+  reader.readAsText(file, 'ISO-8859-1');
+  this.value = '';
+});
+
+document.getElementById('btnImportRecomendacoesSQL').addEventListener('click', () => {
+  document.getElementById('csvRecomendacoesInput').click();
+});
+
+document.getElementById('csvRecomendacoesInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => parseRecomendacoesSQL(ev.target.result);
+  reader.readAsText(file, 'ISO-8859-1');
+  this.value = '';
+});
+
 function parse3Ult(text, fileName) {
   // Detecta separador (tab ou ponto-e-vírgula)
   const firstLine = text.split('\n')[0];
@@ -830,6 +1171,8 @@ function parse3Ult(text, fileName) {
   const iInativo   = headers.indexOf('TEMPO_INATIVO_DIAS');
   const iMedio     = headers.indexOf('TEMPO_MEDIO_ENTRE_PEDIDOS_DIAS');
   const iUltData   = headers.indexOf('ULTIMO_PEDIDO_DATA');
+  let iFoto        = headers.indexOf('FOTO_URL');
+  if (iFoto < 0) iFoto = headers.indexOf('FOTO URL');
 
   if (iGC < 0 || iOrdem < 0) { alert('Colunas GRUPO_COMERCIAL ou ORDEM_COMPRA_RECORTE não encontradas.'); return; }
 
@@ -852,21 +1195,14 @@ function parse3Ult(text, fileName) {
       tempoInativo: iInativo  >= 0 ? (cols[iInativo]||'0').trim() : '0',
       tempoMedio  : iMedio    >= 0 ? (cols[iMedio]||'0').trim()   : '0',
       ultData     : iUltData  >= 0 ? (cols[iUltData]||'').trim()  : '',
+      fotoUrl     : iFoto     >= 0 ? (cols[iFoto]||'').trim()     : '',
     });
   }
 
+  invalidateProductPhotoLookup();
+
   // Aplica DT_ULT_COMPRA nas linhas do csvData
-  allSellers.forEach(s => {
-    (csvData[s.csvName] || []).forEach(row => {
-      const g = (row['GRUPO_  COMERCIAL']||'').trim();
-      const n = parseFloat(g.replace(',','.'));
-      const codGC = isNaN(n) ? g.replace(/^0+/,'') : String(Math.round(n));
-      const entries = ultComprasData[codGC];
-      if (entries && entries.length > 0) {
-        row['DT_ULT_COMPRA'] = entries[0].ultData || '';
-      }
-    });
-  });
+  applyUltComprasToCsvData();
 
   const total = Object.keys(ultComprasData).length;
   const btn3  = document.getElementById('btnImport3Ult');
@@ -886,6 +1222,8 @@ function openUltCompras(codGC, nomeCliente, btnEl) {
 
   document.getElementById('ultComprasTitle').textContent = nomeCliente || codGC;
   document.getElementById('ultComprasSubtitle').textContent = `Grupo Comercial: ${codGC}`;
+
+  invalidateProductPhotoLookup();
 
   // Agrupa por ordem
   const ordens = {};
@@ -923,7 +1261,7 @@ function openUltCompras(codGC, nomeCliente, btnEl) {
       <table style="width:100%;border-collapse:collapse;font-family:'Montserrat',sans-serif;font-size:12px;">
         <thead>
           <tr style="background:#f4f6fb;">
-            <th style="padding:7px 10px;text-align:left;font-weight:700;color:#3a4a7a;border-bottom:2px solid #e0e4f0;">Descrição</th>
+            <th style="padding:7px 10px;text-align:left;font-weight:700;color:#3a4a7a;border-bottom:2px solid #e0e4f0;">Produto</th>
             <th style="padding:7px 10px;text-align:center;font-weight:700;color:#3a4a7a;border-bottom:2px solid #e0e4f0;">Grade</th>
             <th style="padding:7px 10px;text-align:center;font-weight:700;color:#3a4a7a;border-bottom:2px solid #e0e4f0;">Qtd</th>
           </tr>
@@ -931,8 +1269,19 @@ function openUltCompras(codGC, nomeCliente, btnEl) {
         <tbody>`;
     itensOrdenados.forEach((it, idx) => {
       const bg = idx % 2 === 0 ? '#fff' : '#fafbff';
+      const fotoUrl = findProductPhotoUrl(it);
+      const foto = fotoUrl
+        ? `<img src="${esc(fotoUrl)}" alt="${esc(it.desc || it.grade || 'Produto')}" style="width:42px;height:42px;object-fit:cover;border-radius:9px;border:1px solid #e1e7f5;background:#fff;flex-shrink:0;">`
+        : `<div style="width:42px;height:42px;border-radius:9px;border:1px solid #e1e7f5;background:#f4f6fb;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">📦</div>`;
       html += `<tr style="background:${bg};">
-        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;color:#222;text-align:left;">${it.desc || '—'}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;color:#222;text-align:left;">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+            ${foto}
+            <div style="min-width:0;">
+              <div style="font-weight:600;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px;">${it.desc || '—'}</div>
+            </div>
+          </div>
+        </td>
         <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:center;color:#555;">${it.grade || '—'}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:center;font-weight:700;color:#2251c5;">${fmtQtd(it.qtd)}</td>
       </tr>`;
@@ -989,156 +1338,156 @@ document.getElementById('insightOverlay').addEventListener('click', e => {
 });
 
 function openInsight(codGC, nomeCliente) {
-  const compras = ultComprasData[codGC];
-  if (!compras || compras.length === 0) return;
+  const compras = ultComprasData[codGC] || [];
+  const priorityInfo = getPriorityPayloadForGC(codGC) || null;
+  const sqlRecs = getRecommendationRowsForGC(codGC);
+
+  if ((!compras || compras.length === 0) && !priorityInfo && sqlRecs.length === 0) return;
 
   document.getElementById('insightTitle').textContent = nomeCliente || codGC;
-  document.getElementById('insightSubtitle').textContent = `Grupo Comercial: ${codGC} · Análise de compras`;
+  document.getElementById('insightSubtitle').textContent = `Grupo Comercial: ${codGC}`;
 
-  const first   = compras[0];
-  const med     = parseFloat(first.tempoMedio   || 0);
-  const ina     = parseFloat(first.tempoInativo || 0);
-  const ultData = first.ultData || '';
-  const fator   = med < 8 ? 2.5 : med <= 18 ? 2.0 : med <= 45 ? 1.7 : 1.3;
-
-  // ── 1. PRÓXIMA COMPRA ────────────────────────────────────
-  let proximaHtml = '';
-  if (med > 0 && ultData) {
-    let dtUlt;
-    if (ultData.includes('/')) {
-      const p = ultData.split('/');
-      dtUlt = new Date(+p[2], +p[1]-1, +p[0]);
-    } else { dtUlt = new Date(ultData); }
-
-    const pad = n => String(n).padStart(2,'0');
-    const fmtDate = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
-
-    const dtIdeal = new Date(dtUlt.getTime() + med * 86400000);
-    const dtAlerta= new Date(dtUlt.getTime() + med * fator * 86400000);
-    const hoje    = new Date();
-    const diasRestantes = Math.round((dtIdeal.getTime() - hoje.getTime()) / 86400000);
-
-    const statusTxt = diasRestantes > 0
-      ? `<span style="color:#0c7a42;font-weight:700;">Em ${diasRestantes} dias (${fmtDate(dtIdeal)})</span>`
-      : diasRestantes > -Math.round(med * (fator-1))
-        ? `<span style="color:#f0a500;font-weight:700;">Dentro da janela (desde ${fmtDate(dtIdeal)})</span>`
-        : `<span style="color:#d42b2b;font-weight:700;">ATRASADO ${Math.abs(diasRestantes)} dias</span>`;
-
-    proximaHtml = `
-      <div style="background:#fffbf0;border:1.5px solid #f0a500;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
-        <div style="font-weight:800;font-size:12px;letter-spacing:1px;color:#c47d00;text-transform:uppercase;margin-bottom:10px;">📅 Próxima Compra</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px;">
-          <div><div style="color:#888;font-size:10px;font-weight:700;text-transform:uppercase;">Última Compra</div><div style="font-weight:700;margin-top:3px;">${ultData}</div></div>
-          <div><div style="color:#888;font-size:10px;font-weight:700;text-transform:uppercase;">Ciclo Médio</div><div style="font-weight:700;margin-top:3px;">${Math.round(med)} dias</div></div>
-          <div><div style="color:#888;font-size:10px;font-weight:700;text-transform:uppercase;">Período Ideal</div><div style="font-weight:700;margin-top:3px;">${fmtDate(dtIdeal)}</div></div>
-        </div>
-        <div style="margin-top:10px;font-size:12px;"><span style="color:#888;font-size:10px;font-weight:700;text-transform:uppercase;">Status: </span>${statusTxt}</div>
-        <div style="margin-top:6px;font-size:11px;color:#888;">Alerta de prioridade a partir de: <strong>${fmtDate(dtAlerta)}</strong> (fator ${fator}×)</div>
-      </div>`;
-  }
-
-  // ── 2. SUGESTÃO DE PRODUTOS DO CLIENTE ──────────────────
-  const prodMap = {};
-  compras.forEach(c => {
-    if (!c.desc || !c.desc.trim()) return;
-    const k = c.desc.trim();
-    if (!prodMap[k]) prodMap[k] = 0;
-    prodMap[k] += parseFloat(String(c.qtd||'0').replace(',','.')) || 0;
-  });
-  const prodsSorted = Object.entries(prodMap)
-    .sort((a,b) => b[1] - a[1])
-    .slice(0, 10);
-
-  let sugestaoHtml = '';
-  if (prodsSorted.length > 0) {
-    const maxQtd = prodsSorted[0][1];
-    const rows = prodsSorted.map(([desc, qtd], i) => {
-      const pct = Math.round((qtd / maxQtd) * 100);
-      const bg  = i % 2 === 0 ? '#fff' : '#fafbff';
-      return `<tr style="background:${bg};">
-        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:left;color:#222;font-size:12px;">${desc}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:center;font-weight:700;color:#2251c5;font-size:12px;">${Math.round(qtd)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;width:100px;">
-          <div style="background:#e8ecf8;border-radius:4px;height:8px;overflow:hidden;">
-            <div style="background:#2251c5;height:100%;width:${pct}%;border-radius:4px;"></div>
-          </div>
-        </td>
-      </tr>`;
-    }).join('');
-    sugestaoHtml = `
-      <div style="margin-bottom:16px;">
-        <div style="font-weight:800;font-size:12px;letter-spacing:1px;color:#2251c5;text-transform:uppercase;margin-bottom:8px;">🛍 Sugestão — Histórico do Cliente</div>
-        <table style="width:100%;border-collapse:collapse;">
-          <thead><tr style="background:#f4f6fb;">
-            <th style="padding:7px 10px;text-align:left;font-weight:700;color:#3a4a7a;font-size:11px;border-bottom:2px solid #e0e4f0;">Produto</th>
-            <th style="padding:7px 10px;text-align:center;font-weight:700;color:#3a4a7a;font-size:11px;border-bottom:2px solid #e0e4f0;">Qtd Total</th>
-            <th style="padding:7px 10px;border-bottom:2px solid #e0e4f0;"></th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>`;
-  }
-
-  // ── 3. SUGESTÃO DE PRODUTOS COMPLEMENTARES (outros clientes) ──
-  // Encontra todos os pedidos que contêm pelo menos um produto do cliente
-  const clienteProds = new Set(Object.keys(prodMap));
-  const compProdMap  = {};
-
-  Object.entries(ultComprasData).forEach(([gc2, itens]) => {
-    if (gc2 === codGC) return;
-    // Agrupa itens por ordem para ver quais aparecem no mesmo pedido
-    const ordens2 = {};
-    itens.forEach(it => {
-      if (!it.ordem || !it.desc) return;
-      if (!ordens2[it.ordem]) ordens2[it.ordem] = [];
-      ordens2[it.ordem].push(it.desc.trim());
-    });
-    Object.values(ordens2).forEach(descs => {
-      const hasClienteProd = descs.some(d => clienteProds.has(d));
-      if (!hasClienteProd) return;
-      descs.forEach(d => {
-        if (clienteProds.has(d)) return; // já é produto do cliente
-        compProdMap[d] = (compProdMap[d] || 0) + 1;
-      });
-    });
-  });
-
-  const compSorted = Object.entries(compProdMap)
-    .sort((a,b) => b[1] - a[1])
-    .slice(0, 8);
-
+  let proximaHtml = priorityInfo ? buildPrioritySqlHtml(priorityInfo) : '';
+  let sugestaoHtml = sqlRecs.length > 0 ? buildSqlRecommendationsHtml(sqlRecs) : '';
   let compHtml = '';
-  if (compSorted.length > 0) {
-    const maxFreq = compSorted[0][1];
-    const compRows = compSorted.map(([desc, freq], i) => {
-      const pct = Math.round((freq / maxFreq) * 100);
-      const bg  = i % 2 === 0 ? '#fff' : '#fafbff';
-      return `<tr style="background:${bg};">
-        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:left;color:#222;font-size:12px;">${desc}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:center;font-weight:700;color:#0c7a42;font-size:12px;">${freq} pedidos</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;width:100px;">
-          <div style="background:#e8f5ee;border-radius:4px;height:8px;overflow:hidden;">
-            <div style="background:#0c7a42;height:100%;width:${pct}%;border-radius:4px;"></div>
+
+  if ((!priorityInfo || !sqlRecs.length) && compras.length > 0) {
+    const first   = compras[0];
+    const med     = parseFloat(first.tempoMedio   || 0);
+    const ultData = first.ultData || '';
+    const fator   = med < 8 ? 2.5 : med <= 18 ? 2.0 : med <= 45 ? 1.7 : 1.3;
+
+    if (!priorityInfo && med > 0 && ultData) {
+      let dtUlt;
+      if (ultData.includes('/')) {
+        const p = ultData.split('/');
+        dtUlt = new Date(+p[2], +p[1]-1, +p[0]);
+      } else {
+        dtUlt = new Date(ultData);
+      }
+
+      const pad = n => String(n).padStart(2,'0');
+      const fmtDate = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+      const dtIdeal = new Date(dtUlt.getTime() + med * 86400000);
+      const dtAlerta= new Date(dtUlt.getTime() + med * fator * 86400000);
+      const hoje    = new Date();
+      const diasRestantes = Math.round((dtIdeal.getTime() - hoje.getTime()) / 86400000);
+
+      const statusTxt = diasRestantes > 0
+        ? `<span style="color:#0c7a42;font-weight:700;">Em ${diasRestantes} dias (${fmtDate(dtIdeal)})</span>`
+        : diasRestantes > -Math.round(med * (fator-1))
+          ? `<span style="color:#f0a500;font-weight:700;">Dentro da janela (desde ${fmtDate(dtIdeal)})</span>`
+          : `<span style="color:#d42b2b;font-weight:700;">ATRASADO ${Math.abs(diasRestantes)} dias</span>`;
+
+      proximaHtml = `
+        <div style="background:#fffbf0;border:1.5px solid #f0a500;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+          <div style="font-weight:800;font-size:12px;letter-spacing:1px;color:#c47d00;text-transform:uppercase;margin-bottom:10px;">📅 Próxima Compra</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px;">
+            <div><div style="color:#888;font-size:10px;font-weight:700;text-transform:uppercase;">Última Compra</div><div style="font-weight:700;margin-top:3px;">${ultData}</div></div>
+            <div><div style="color:#888;font-size:10px;font-weight:700;text-transform:uppercase;">Ciclo Médio</div><div style="font-weight:700;margin-top:3px;">${Math.round(med)} dias</div></div>
+            <div><div style="color:#888;font-size:10px;font-weight:700;text-transform:uppercase;">Período Ideal</div><div style="font-weight:700;margin-top:3px;">${fmtDate(dtIdeal)}</div></div>
           </div>
-        </td>
-      </tr>`;
-    }).join('');
-    compHtml = `
-      <div style="margin-bottom:16px;">
-        <div style="font-weight:800;font-size:12px;letter-spacing:1px;color:#0c7a42;text-transform:uppercase;margin-bottom:6px;">🤝 Sugestão — Produtos Complementares</div>
-        <div style="font-size:11px;color:#888;margin-bottom:8px;">Produtos frequentemente comprados junto com os itens deste cliente por outros clientes.</div>
-        <table style="width:100%;border-collapse:collapse;">
-          <thead><tr style="background:#f4f6fb;">
-            <th style="padding:7px 10px;text-align:left;font-weight:700;color:#3a4a7a;font-size:11px;border-bottom:2px solid #e0e4f0;">Produto</th>
-            <th style="padding:7px 10px;text-align:center;font-weight:700;color:#3a4a7a;font-size:11px;border-bottom:2px solid #e0e4f0;">Frequência</th>
-            <th style="padding:7px 10px;border-bottom:2px solid #e0e4f0;"></th>
-          </tr></thead>
-          <tbody>${compRows}</tbody>
-        </table>
-      </div>`;
+          <div style="margin-top:10px;font-size:12px;"><span style="color:#888;font-size:10px;font-weight:700;text-transform:uppercase;">Status: </span>${statusTxt}</div>
+          <div style="margin-top:6px;font-size:11px;color:#888;">Alerta de prioridade a partir de: <strong>${fmtDate(dtAlerta)}</strong> (fator ${fator}×)</div>
+        </div>`;
+    }
+
+    if (!sqlRecs.length) {
+      const prodMap = {};
+      compras.forEach(c => {
+        if (!c.desc || !c.desc.trim()) return;
+        const k = c.desc.trim();
+        if (!prodMap[k]) prodMap[k] = 0;
+        prodMap[k] += parseFloat(String(c.qtd||'0').replace(',','.')) || 0;
+      });
+      const prodsSorted = Object.entries(prodMap).sort((a,b) => b[1] - a[1]).slice(0, 10);
+
+      if (prodsSorted.length > 0) {
+        const maxQtd = prodsSorted[0][1];
+        const rows = prodsSorted.map(([desc, qtd], i) => {
+          const pct = Math.round((qtd / maxQtd) * 100);
+          const bg  = i % 2 === 0 ? '#fff' : '#fafbff';
+          return `<tr style="background:${bg};">
+            <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:left;color:#222;font-size:12px;">${desc}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:center;font-weight:700;color:#2251c5;font-size:12px;">${Math.round(qtd)}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;width:100px;">
+              <div style="background:#e8ecf8;border-radius:4px;height:8px;overflow:hidden;">
+                <div style="background:#2251c5;height:100%;width:${pct}%;border-radius:4px;"></div>
+              </div>
+            </td>
+          </tr>`;
+        }).join('');
+        sugestaoHtml = `
+          <div style="margin-bottom:16px;">
+            <div style="font-weight:800;font-size:12px;letter-spacing:1px;color:#2251c5;text-transform:uppercase;margin-bottom:8px;">🛍 Sugestão — Histórico do Cliente</div>
+            <table style="width:100%;border-collapse:collapse;">
+              <thead><tr style="background:#f4f6fb;">
+                <th style="padding:7px 10px;text-align:left;font-weight:700;color:#3a4a7a;font-size:11px;border-bottom:2px solid #e0e4f0;">Produto</th>
+                <th style="padding:7px 10px;text-align:center;font-weight:700;color:#3a4a7a;font-size:11px;border-bottom:2px solid #e0e4f0;">Qtd Total</th>
+                <th style="padding:7px 10px;border-bottom:2px solid #e0e4f0;"></th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+      }
+
+      const clienteProds = new Set(Object.keys(prodMap));
+      const compProdMap  = {};
+      Object.entries(ultComprasData).forEach(([gc2, itens]) => {
+        if (gc2 === codGC) return;
+        const ordens2 = {};
+        itens.forEach(it => {
+          if (!it.ordem || !it.desc) return;
+          if (!ordens2[it.ordem]) ordens2[it.ordem] = [];
+          ordens2[it.ordem].push(it.desc.trim());
+        });
+        Object.values(ordens2).forEach(descs => {
+          const hasClienteProd = descs.some(d => clienteProds.has(d));
+          if (!hasClienteProd) return;
+          descs.forEach(d => {
+            if (clienteProds.has(d)) return;
+            compProdMap[d] = (compProdMap[d] || 0) + 1;
+          });
+        });
+      });
+
+      const compSorted = Object.entries(compProdMap).sort((a,b) => b[1] - a[1]).slice(0, 8);
+      if (compSorted.length > 0) {
+        const maxFreq = compSorted[0][1];
+        const compRows = compSorted.map(([desc, freq], i) => {
+          const pct = Math.round((freq / maxFreq) * 100);
+          const bg  = i % 2 === 0 ? '#fff' : '#fafbff';
+          return `<tr style="background:${bg};">
+            <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:left;color:#222;font-size:12px;">${desc}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;text-align:center;font-weight:700;color:#0c7a42;font-size:12px;">${freq} pedidos</td>
+            <td style="padding:6px 10px;border-bottom:1px solid #eef0f8;width:100px;">
+              <div style="background:#e8f5ee;border-radius:4px;height:8px;overflow:hidden;">
+                <div style="background:#0c7a42;height:100%;width:${pct}%;border-radius:4px;"></div>
+              </div>
+            </td>
+          </tr>`;
+        }).join('');
+        compHtml = `
+          <div style="margin-bottom:16px;">
+            <div style="font-weight:800;font-size:12px;letter-spacing:1px;color:#0c7a42;text-transform:uppercase;margin-bottom:6px;">🤝 Sugestão — Produtos Complementares</div>
+            <div style="font-size:11px;color:#888;margin-bottom:8px;">Produtos frequentemente comprados junto com os itens deste cliente por outros clientes.</div>
+            <table style="width:100%;border-collapse:collapse;">
+              <thead><tr style="background:#f4f6fb;">
+                <th style="padding:7px 10px;text-align:left;font-weight:700;color:#3a4a7a;font-size:11px;border-bottom:2px solid #e0e4f0;">Produto</th>
+                <th style="padding:7px 10px;text-align:center;font-weight:700;color:#3a4a7a;font-size:11px;border-bottom:2px solid #e0e4f0;">Frequência</th>
+                <th style="padding:7px 10px;border-bottom:2px solid #e0e4f0;"></th>
+              </tr></thead>
+              <tbody>${compRows}</tbody>
+            </table>
+          </div>`;
+      }
+    }
   }
 
-  document.getElementById('insightBody').innerHTML = proximaHtml + sugestaoHtml + compHtml;
+  const emptyStateHtml = (!proximaHtml && !sugestaoHtml && !compHtml)
+    ? `<div style="background:#f8fbff;border:1px solid #d7e5ff;border-radius:12px;padding:16px;font-size:12px;color:#5c6786;">As informações de prioridade e prazo ficaram somente na tabela principal. Neste cliente, não há compras recentes ou recomendações extras para exibir neste detalhe.</div>`
+    : '';
+  document.getElementById('insightBody').innerHTML = proximaHtml + sugestaoHtml + compHtml + emptyStateHtml;
   document.getElementById('insightOverlay').style.display = 'flex';
 }
 
@@ -1598,6 +1947,7 @@ function parseCSV(text) {
   });
   // Aplica cadastro se já foi importado
   if (Object.keys(cadastroData).length > 0) _applyCadastroToCsvData();
+  if (Object.keys(prioritySqlData).length > 0) mergePriorityIntoCsvData();
 }
 
 function splitLine(line, delim) {
@@ -1609,6 +1959,735 @@ function splitLine(line, delim) {
   }
   res.push(cur);
   return res;
+}
+
+function detectDelimiter(text) {
+  const first = String((text || '').split('\n')[0] || '');
+  if (first.includes('\t')) return '\t';
+  const semi = (first.match(/;/g) || []).length;
+  const comma = (first.match(/,/g) || []).length;
+  return semi >= comma ? ';' : ',';
+}
+
+function normalizeHeader(header) {
+  return String(header || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
+function getRowValueByNormalizedCandidates(row, candidates = []) {
+  if (!row || typeof row !== 'object') return '';
+  const normalizedCandidates = candidates.map(c => normalizeHeader(c));
+  for (const [key, value] of Object.entries(row)) {
+    if (normalizedCandidates.includes(normalizeHeader(key))) {
+      return value ?? '';
+    }
+  }
+  return '';
+}
+
+function normalizeGC(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const cleaned = raw.replace(/["'`´]/g, '').trim();
+  if (!cleaned) return '';
+  if (/^[\d\s.,\-]+$/.test(cleaned)) {
+    const digitsOnly = cleaned.replace(/\D+/g, '');
+    if (digitsOnly) return digitsOnly.replace(/^0+/, '') || '0';
+    const n = parseFloat(cleaned.replace(',', '.'));
+    if (!isNaN(n)) return String(Math.round(n));
+  }
+  return cleaned.replace(/^0+/, '') || cleaned;
+}
+
+function getRowCodGC(row) {
+  let raw = getRowValueByNormalizedCandidates(row, [
+    'GRUPO_  COMERCIAL',
+    'GRUPO_COMERCIAL',
+    'GRUPO COMERCIAL'
+  ]);
+
+  if (!String(raw || '').trim()) {
+    const dynamicKey = Object.keys(row || {}).find(k => {
+      const nk = normalizeHeader(k);
+      return nk.includes('GRUPO') && nk.includes('COMERCIAL');
+    });
+    raw = dynamicKey ? row[dynamicKey] : '';
+  }
+
+  return normalizeGC(raw);
+}
+
+function formatBrDate(value) {
+  const v = String(value || '').trim();
+  if (!v) return '';
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return v;
+  if (/^\d{8}$/.test(v)) return `${v.slice(6,8)}/${v.slice(4,6)}/${v.slice(0,4)}`;
+  const dt = new Date(v);
+  if (!isNaN(dt.getTime())) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(dt.getDate())}/${pad(dt.getMonth()+1)}/${dt.getFullYear()}`;
+  }
+  return v;
+}
+
+
+function parseDateFlexible(value) {
+  const s = String(value || '').trim();
+  if (!s) return null;
+  let d = null;
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+    const p = s.split('/');
+    d = new Date(+p[2], +p[1] - 1, +p[0]);
+  } else if (/^\d{8}$/.test(s)) {
+    d = new Date(+s.slice(0,4), +s.slice(4,6) - 1, +s.slice(6,8));
+  } else {
+    d = new Date(s);
+  }
+
+  return d && !isNaN(d.getTime()) ? d : null;
+}
+
+function getLastPurchaseDateInfo(row) {
+  const gc = getRowCodGC(row);
+  const entries = gc ? ultComprasData[gc] : null;
+
+  const candidates = [
+    entries && entries.length > 0 ? entries[0].ultData : '',
+    getPriorityContext(row).dataUltPedido || '',
+    getRowValueByNormalizedCandidates(row, [
+      'DATA_ULTIMO_PEDIDO_SQL',
+      'DATA_DO_ULTIMO_PEDIDO',
+      'DATA DO ULTIMO PEDIDO',
+      'DT_ULT_COMPRA'
+    ]) || '',
+    row && row['DT_ULT_COMPRA'] || ''
+  ];
+
+  for (const candidate of candidates) {
+    const dt = parseDateFlexible(candidate);
+    if (dt) {
+      const br = formatBrDate(candidate);
+      return { raw: candidate, date: dt, br };
+    }
+  }
+
+  return { raw: '', date: null, br: '' };
+}
+
+function getDaysSinceLastPurchase(row) {
+  const info = getLastPurchaseDateInfo(row);
+  if (!info.date) return null;
+  return Math.floor((Date.now() - info.date.getTime()) / 86400000);
+}
+
+function normalizePriorityLabel(value) {
+  const s = String(value || '').trim().toUpperCase();
+  if (!s) return '';
+  const match = s.match(/(?:PRIORIDADE\s*)?(\d)/);
+  return match ? `P${match[1]}` : s;
+}
+
+function priorityOrderFromValue(value) {
+  const match = normalizePriorityLabel(value).match(/^P(\d)$/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+function priorityBadgeHtml(label) {
+  const normalized = normalizePriorityLabel(label);
+  const order = priorityOrderFromValue(normalized);
+  let bg = '#eef2ff', color = '#3b5bcc', text = normalized || '-';
+  if (order === 1) { bg = '#eaf6ef'; color = '#0c7a42'; }
+  else if (order === 2) { bg = '#fff3df'; color = '#c47d00'; }
+  else if (order === 3) { bg = '#f1f3f8'; color = '#60708f'; }
+  else if (order === 4) { bg = '#fdeceb'; color = '#c0362c'; }
+  return `<span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;background:${bg};color:${color};font-family:'Montserrat',sans-serif;font-size:11px;font-weight:800;letter-spacing:.4px;white-space:nowrap;">${esc(text)}</span>`;
+}
+
+function prazoBadgeHtml(label) {
+  const v = String(label || '').trim();
+  const u = v.toUpperCase();
+  let bg = '#f1f3f8', color = '#60708f';
+  if (u.includes('NO PRAZO')) { bg = '#eaf6ef'; color = '#0c7a42'; }
+  else if (u.includes('UM POUCO ACIMA')) { bg = '#fff8d9'; color = '#a87400'; }
+  else if (u.includes('MUITO ACIMA')) { bg = '#fdeceb'; color = '#c0362c'; }
+  else if (u.includes('ABAIXO') || u.includes('ANTES')) { bg = '#eef2ff'; color = '#2251c5'; }
+  else if (u.includes('ACIMA')) { bg = '#fff3df'; color = '#c47d00'; }
+  return `<span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;background:${bg};color:${color};font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;white-space:nowrap;">${esc(v || '-')}</span>`;
+}
+
+function normalizePrazoStatus(status, prioridade) {
+  const raw = String(status || '').trim();
+  const order = parseInt(String(prioridade || '').replace(/\D+/g, ''), 10);
+  const upper = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+
+  if (order === 2 && (upper.includes('ACIMA') || upper.includes('MUITO'))) {
+    return 'UM POUCO ACIMA DO PRAZO';
+  }
+  if (order === 4 && upper.includes('ACIMA')) {
+    return 'MUITO ACIMA DO PRAZO';
+  }
+  if (!raw && order === 2) return 'UM POUCO ACIMA DO PRAZO';
+  if (!raw && order === 4) return 'MUITO ACIMA DO PRAZO';
+  return raw;
+}
+
+function toNumber(value) {
+  if (value === null || value === undefined) return NaN;
+  const raw = String(value).trim();
+  if (!raw) return NaN;
+  const normalized = raw
+    .replace(/\s+/g, '')
+    .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+    .replace(',', '.');
+  const n = parseFloat(normalized);
+  return isNaN(n) ? NaN : n;
+}
+
+function formatCompactNumber(value, maxDecimals = 0) {
+  const n = toNumber(value);
+  if (isNaN(n)) return '';
+  const decimals = Number.isInteger(n) ? 0 : maxDecimals;
+  return n.toLocaleString('pt-BR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: decimals
+  });
+}
+
+
+function formatDaysNoDecimals(value) {
+  const n = toNumber(value);
+  if (isNaN(n)) return '';
+  return String(Math.trunc(n));
+}
+
+function getContatoDatesInfo(value, refDate = new Date()) {
+  const dias = String(value || '')
+    .split(/[;,\-]/)
+    .map(v => parseInt(String(v).trim(), 10))
+    .filter(v => !isNaN(v) && v > 0 && v <= 31);
+
+  const uniqueSorted = [...new Set(dias)].sort((a,b) => a - b);
+  const month = refDate.getMonth() + 1;
+  const year = refDate.getFullYear();
+  const pad = n => String(n).padStart(2, '0');
+  const fullDates = uniqueSorted.map(day => `${pad(day)}/${pad(month)}/${year}`);
+  return {
+    rawDays: uniqueSorted,
+    fullDates,
+    lastDate: fullDates.length ? fullDates[fullDates.length - 1] : '',
+    title: fullDates.join(' • ')
+  };
+}
+
+function getLastContatoTimestamp(row) {
+  const info = getContatoDatesInfo(row && row['DIAS_CONTATO']);
+  if (!info.lastDate) return 0;
+  const m = info.lastDate.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? new Date(+m[3], +m[2]-1, +m[1]).getTime() : 0;
+}
+
+let productPhotoLookupCache = null;
+
+function normalizeProductKey(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, ' ')
+    .replace(/^0+(?=\d)/, '');
+}
+
+function invalidateProductPhotoLookup() {
+  productPhotoLookupCache = null;
+}
+
+function buildProductPhotoLookup() {
+  if (productPhotoLookupCache) return productPhotoLookupCache;
+
+  const byGrade = {};
+  const byDesc = {};
+  const register = (grade, desc, foto) => {
+    const fotoUrl = String(foto || '').trim();
+    if (!fotoUrl) return;
+    const gradeKey = normalizeProductKey(grade);
+    const descKey = normalizeProductKey(desc);
+    if (gradeKey && !byGrade[gradeKey]) byGrade[gradeKey] = fotoUrl;
+    if (descKey && !byDesc[descKey]) byDesc[descKey] = fotoUrl;
+  };
+
+  Object.values(recommendationSqlData || {}).forEach(arr => {
+    (arr || []).forEach(item => register(item.GRADE, item.DESC_PRODUTO, item.FOTO_URL));
+  });
+
+  Object.values(ultComprasData || {}).forEach(arr => {
+    (arr || []).forEach(item => register(item.grade, item.desc, item.fotoUrl || item.FOTO_URL || item.foto));
+  });
+
+  productPhotoLookupCache = { byGrade, byDesc };
+  return productPhotoLookupCache;
+}
+
+function findProductPhotoUrl(item) {
+  const direct = String((item && (item.fotoUrl || item.FOTO_URL || item.foto)) || '').trim();
+  if (direct) return direct;
+
+  const lookup = buildProductPhotoLookup();
+  const gradeKey = normalizeProductKey(item && (item.grade || item.GRADE));
+  const descKey = normalizeProductKey(item && (item.desc || item.DESC_PRODUTO));
+  return (gradeKey && lookup.byGrade[gradeKey]) || (descKey && lookup.byDesc[descKey]) || '';
+}
+
+function getRecommendationMetrics(item) {
+  const caixasSql = toNumber(item.QTD_SUGERIDA_CAIXAS);
+  const unidadesAjustadasSql = toNumber(item.QTD_SUGERIDA_UNIDADES_AJUSTADA);
+  const unidadesMediaSql = toNumber(item.QTD_SUGERIDA_UNIDADES);
+  const unidadesFallback = toNumber(item.QTD_SUGERIDA);
+  const unidadesPorCaixa = toNumber(item.UNIDADES_POR_CAIXA || item.QTD_GRADE);
+  const mediaUnidades = !isNaN(unidadesMediaSql) && unidadesMediaSql > 0
+    ? unidadesMediaSql
+    : (!isNaN(unidadesFallback) && unidadesFallback > 0 ? unidadesFallback : NaN);
+
+  let caixas = NaN;
+  let unidadesSugeridas = NaN;
+
+  if (!isNaN(unidadesPorCaixa) && unidadesPorCaixa > 1) {
+    if (!isNaN(caixasSql) && caixasSql > 0) {
+      caixas = Math.max(1, Math.round(caixasSql));
+    } else if (!isNaN(unidadesAjustadasSql) && unidadesAjustadasSql > 0) {
+      caixas = Math.max(1, Math.ceil(unidadesAjustadasSql / unidadesPorCaixa));
+    } else if (!isNaN(mediaUnidades) && mediaUnidades > 0) {
+      caixas = Math.max(1, Math.ceil(mediaUnidades / unidadesPorCaixa));
+    }
+
+    if (!isNaN(caixas) && caixas > 0) {
+      unidadesSugeridas = caixas * unidadesPorCaixa;
+    }
+  } else {
+    unidadesSugeridas = !isNaN(unidadesAjustadasSql) && unidadesAjustadasSql > 0
+      ? unidadesAjustadasSql
+      : mediaUnidades;
+  }
+
+  return {
+    caixas,
+    unidadesSugeridas,
+    mediaUnidades,
+    unidadesPorCaixa,
+    temCaixa: !isNaN(unidadesPorCaixa) && unidadesPorCaixa > 1
+  };
+}
+
+function formatRecommendationQty(item) {
+  const metrics = getRecommendationMetrics(item);
+
+  if (metrics.temCaixa && !isNaN(metrics.caixas) && metrics.caixas > 0) {
+    const caixasTxt = `${formatCompactNumber(metrics.caixas)} ${metrics.caixas === 1 ? 'caixa' : 'caixas'}`;
+    const unidadesTxt = !isNaN(metrics.unidadesSugeridas) && metrics.unidadesSugeridas > 0
+      ? ` (${formatCompactNumber(metrics.unidadesSugeridas)} un.)`
+      : '';
+    return caixasTxt + unidadesTxt;
+  }
+
+  if (!isNaN(metrics.unidadesSugeridas) && metrics.unidadesSugeridas > 0) {
+    return `${formatCompactNumber(metrics.unidadesSugeridas)} un.`;
+  }
+
+  return '-';
+}
+
+function formatRecommendationPackaging(item) {
+  const metrics = getRecommendationMetrics(item);
+  if (!metrics.temCaixa) return '';
+  return `${formatCompactNumber(metrics.unidadesPorCaixa)} un./caixa`;
+}
+
+function formatRecommendationStock(item) {
+  const estoque = toNumber(item.QTD_STK_DISPONIVEL);
+  if (isNaN(estoque)) return esc(item.QTD_STK_DISPONIVEL || '0');
+  return `${formatCompactNumber(estoque)} un.`;
+}
+
+function formatRecommendationPrice(item) {
+  const pvCaixa = toNumber(item.PV_CAIXA);
+  if (!isNaN(pvCaixa) && pvCaixa > 0) return `PV caixa: ${formatNum(pvCaixa)}`;
+
+  const pvUnit = toNumber(item.PV_UNITARIO || item.PV);
+  if (!isNaN(pvUnit) && pvUnit > 0) return `PV un.: ${formatNum(pvUnit)}`;
+
+  return 'PV: -';
+}
+
+function getPriorityOrderValue(row) {
+  return getPriorityContext(row).order || 0;
+}
+
+function getPriorityPayloadForRow(row) {
+  if (!prioritySqlData || Object.keys(prioritySqlData).length === 0) return null;
+  const codGC = getRowCodGC(row);
+  return codGC ? getPriorityPayloadForGC(codGC) : null;
+}
+
+function getPriorityPayloadForGC(codGC) {
+  const key = normalizeGC(codGC);
+  if (!key || !prioritySqlData || Object.keys(prioritySqlData).length === 0) return null;
+  if (prioritySqlData[key]) return prioritySqlData[key];
+  const foundKey = Object.keys(prioritySqlData).find(k => normalizeGC(k) === key);
+  return foundKey ? prioritySqlData[foundKey] : null;
+}
+
+function getRecommendationRowsForGC(codGC) {
+  const key = normalizeGC(codGC);
+  if (!key || !recommendationSqlData || typeof recommendationSqlData !== 'object') return [];
+  if (Array.isArray(recommendationSqlData[key])) return recommendationSqlData[key];
+  const foundKey = Object.keys(recommendationSqlData).find(k => normalizeGC(k) === key && Array.isArray(recommendationSqlData[k]));
+  return foundKey ? recommendationSqlData[foundKey] : [];
+}
+
+function normalizePrioritySqlDataMap() {
+  const out = {};
+  Object.entries(prioritySqlData || {}).forEach(([gc, payload]) => {
+    const key = normalizeGC(gc || (payload && (payload.GRUPO_COMERCIAL || payload.COD_GC || payload.CODCLI)) || '');
+    if (!key) return;
+    out[key] = Object.assign({}, out[key] || {}, payload || {});
+  });
+  prioritySqlData = out;
+}
+
+function normalizeRecommendationSqlDataMap() {
+  const out = {};
+  Object.entries(recommendationSqlData || {}).forEach(([gc, rows]) => {
+    const key = normalizeGC(gc);
+    if (!key || !Array.isArray(rows)) return;
+    if (!out[key]) out[key] = [];
+    out[key].push(...rows);
+  });
+  Object.keys(out).forEach(gc => { out[gc] = sortRecommendationRows(out[gc]); });
+  recommendationSqlData = out;
+}
+
+function getPriorityContext(row) {
+  const payload = getPriorityPayloadForRow(row) || {};
+
+  const prioridadeRaw = getRowValueByNormalizedCandidates(row, [
+    'PRIORIDADE_SQL','PRIORIDADE'
+  ]) || payload.PRIORIDADE || '';
+
+  const ordemRaw = String(
+    getRowValueByNormalizedCandidates(row, [
+      'ORDEM_PRIORIDADE_SQL','ORDEM_PRIORIDADE','ORDEM PRIORIDADE'
+    ]) || payload.ORDEM_PRIORIDADE || ''
+  ).trim();
+
+  const prazoRaw = getRowValueByNormalizedCandidates(row, [
+    'PRAZO_PRIORIZACAO_DIAS','PRAZO_USADO_NA_PRIORIZACAO_DIAS','PRAZO USADO NA PRIORIZACAO DIAS'
+  ]) || payload.PRAZO_USADO_NA_PRIORIZACAO_DIAS || '';
+
+  const statusRaw = getRowValueByNormalizedCandidates(row, [
+    'STATUS_PRAZO_SQL','STATUS_DO_PRAZO','STATUS DO PRAZO'
+  ]) || payload.STATUS_DO_PRAZO || '';
+
+  const dataProxRaw = getRowValueByNormalizedCandidates(row, [
+    'DATA_PROXIMO_PEDIDO_SQL','DATA_ESPERADA_DO_PROXIMO_PEDIDO','DATA ESPERADA DO PROXIMO PEDIDO'
+  ]) || payload.DATA_ESPERADA_DO_PROXIMO_PEDIDO || '';
+
+  const prioridadeLabel = normalizePriorityLabel(prioridadeRaw);
+  const ordem = parseInt(ordemRaw, 10) || priorityOrderFromValue(prioridadeLabel) || 0;
+
+  return {
+    label: prioridadeLabel || (ordem ? `P${ordem}` : ''),
+    order: ordem,
+    status: normalizePrazoStatus(statusRaw, ordem || prioridadeLabel),
+    prazo: prazoRaw,
+    dataProx: formatBrDate(dataProxRaw || ''),
+    diasUltPedido: getRowValueByNormalizedCandidates(row, [
+      'DIAS_DESDE_ULTIMO_PEDIDO_SQL','DIAS_DESDE_ULTIMO_PEDIDO','DIAS DESDE ULTIMO PEDIDO'
+    ]) || payload.DIAS_DESDE_ULTIMO_PEDIDO || '',
+    fontePrazo: getRowValueByNormalizedCandidates(row, [
+      'FONTE_PRAZO_SQL','FONTE_DO_PRAZO_USADO','FONTE DO PRAZO USADO'
+    ]) || payload.FONTE_DO_PRAZO_USADO || '',
+    dataUltPedido: formatBrDate(getRowValueByNormalizedCandidates(row, [
+      'DATA_ULTIMO_PEDIDO_SQL','DATA_DO_ULTIMO_PEDIDO','DATA DO ULTIMO PEDIDO'
+    ]) || payload.DATA_DO_ULTIMO_PEDIDO || ''),
+    prazoCliente: getRowValueByNormalizedCandidates(row, [
+      'PRAZO_CLIENTE_SQL','PRAZO_MEDIO_DO_CLIENTE_DIAS','PRAZO MEDIO DO CLIENTE DIAS'
+    ]) || payload.PRAZO_MEDIO_DO_CLIENTE_DIAS || '',
+    prazoPerfil: getRowValueByNormalizedCandidates(row, [
+      'PRAZO_PERFIL_SQL','PRAZO_MEDIO_DO_PERFIL_2025_DIAS','PRAZO MEDIO DO PERFIL 2025 DIAS'
+    ]) || payload.PRAZO_MEDIO_DO_PERFIL_2025_DIAS || '',
+    etapaAtual: getRowValueByNormalizedCandidates(row, [
+      'ETAPA_ATUAL_CLIENTE_SQL','ETAPA_ATUAL_DO_CLIENTE','ETAPA ATUAL DO CLIENTE'
+    ]) || payload.ETAPA_ATUAL_DO_CLIENTE || '',
+    faixaTicket: getRowValueByNormalizedCandidates(row, [
+      'FAIXA_TICKET_ATUAL_SQL','FAIXA_TICKET_ATUAL','FAIXA TICKET ATUAL'
+    ]) || payload.FAIXA_TICKET_ATUAL || ''
+  };
+}
+
+function hasPriorityContato(row) {
+  const ctx = getPriorityContext(row);
+  return ctx.order > 0 || ctx.label !== '';
+}
+
+function mergePriorityIntoCsvData() {
+  if (!prioritySqlData || Object.keys(prioritySqlData).length === 0) return;
+
+  const normalizedPriorityMap = {};
+  Object.entries(prioritySqlData || {}).forEach(([key, value]) => {
+    const codGC = normalizeGC((value && value.GRUPO_COMERCIAL) || key);
+    if (codGC) normalizedPriorityMap[codGC] = value;
+  });
+
+  Object.values(csvData || {}).forEach(rows => {
+    (rows || []).forEach(row => {
+      const codGC = getRowCodGC(row);
+      if (!codGC || !normalizedPriorityMap[codGC]) return;
+      const p = normalizedPriorityMap[codGC];
+      const prioridadeLabel = normalizePriorityLabel(p.PRIORIDADE || '');
+      const prioridadeOrdem = String(p.ORDEM_PRIORIDADE || '').trim() || (priorityOrderFromValue(prioridadeLabel) || '');
+      row['PRIORIDADE_SQL'] = prioridadeLabel || (prioridadeOrdem ? `P${prioridadeOrdem}` : '');
+      row['ORDEM_PRIORIDADE_SQL'] = prioridadeOrdem;
+      row['STATUS_PRAZO_SQL'] = normalizePrazoStatus(p.STATUS_DO_PRAZO || '', prioridadeOrdem || prioridadeLabel);
+      row['DIAS_DESDE_ULTIMO_PEDIDO_SQL'] = p.DIAS_DESDE_ULTIMO_PEDIDO || '';
+      row['PRAZO_PRIORIZACAO_DIAS'] = p.PRAZO_USADO_NA_PRIORIZACAO_DIAS || '';
+      row['DATA_PROXIMO_PEDIDO_SQL'] = p.DATA_ESPERADA_DO_PROXIMO_PEDIDO || '';
+      row['FONTE_PRAZO_SQL'] = p.FONTE_DO_PRAZO_USADO || '';
+      row['DATA_ULTIMO_PEDIDO_SQL'] = p.DATA_DO_ULTIMO_PEDIDO || '';
+      row['PRAZO_CLIENTE_SQL'] = p.PRAZO_MEDIO_DO_CLIENTE_DIAS || '';
+      row['PRAZO_PERFIL_SQL'] = p.PRAZO_MEDIO_DO_PERFIL_2025_DIAS || '';
+      row['ETAPA_ATUAL_CLIENTE_SQL'] = p.ETAPA_ATUAL_DO_CLIENTE || '';
+      row['FAIXA_TICKET_ATUAL_SQL'] = p.FAIXA_TICKET_ATUAL || '';
+    });
+  });
+}
+
+function sortRecommendationRows(rows) {
+  const typeOrder = { REPOSICAO: 1, BEST_SELLER: 2 };
+  return [...rows].sort((a, b) => {
+    const ta = typeOrder[String(a.TIPO_RECOMENDACAO || '').toUpperCase()] || 9;
+    const tb = typeOrder[String(b.TIPO_RECOMENDACAO || '').toUpperCase()] || 9;
+    if (ta !== tb) return ta - tb;
+    const oa = parseInt(a.ORDEM_RECOMENDACAO || '999', 10);
+    const ob = parseInt(b.ORDEM_RECOMENDACAO || '999', 10);
+    if (oa !== ob) return oa - ob;
+    const sa = parseFloat(String(a.SCORE_RECOMENDACAO || '0').replace(',', '.')) || 0;
+    const sb = parseFloat(String(b.SCORE_RECOMENDACAO || '0').replace(',', '.')) || 0;
+    return sb - sa;
+  });
+}
+
+function parseSupplementCsv(text) {
+  const delim = detectDelimiter(text);
+  const lines = String(text || '').split('\n').map(l => l.replace(/\r/g, '')).filter(l => l.trim());
+  if (lines.length < 2) return null;
+  const headers = splitLine(lines[0], delim);
+  const normalized = headers.map(normalizeHeader);
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = splitLine(lines[i], delim);
+    const raw = {};
+    const norm = {};
+    headers.forEach((h, idx) => {
+      const val = (cols[idx] || '').trim();
+      raw[h.trim()] = val;
+      norm[normalized[idx]] = val;
+    });
+    rows.push({ raw, norm });
+  }
+  return { headers, normalized, rows };
+}
+
+function parsePriorizacaoSQL(text) {
+  const parsed = parseSupplementCsv(text);
+  if (!parsed) { alert('CSV de priorização vazio ou inválido.'); return; }
+  const out = {};
+  parsed.rows.forEach(({ norm }) => {
+    const gcRaw = norm['GRUPO COMERCIAL'];
+    if (!gcRaw) return;
+    const codGC = normalizeGC(gcRaw);
+    out[codGC] = {
+      GRUPO_COMERCIAL: gcRaw,
+      COD_CLIENTE: norm['COD CLIENTE'] || '',
+      LOJA_CLIENTE: norm['LOJA CLIENTE'] || '',
+      COD_VENDEDOR: norm['COD VENDEDOR'] || '',
+      ESTADO: norm['ESTADO'] || '',
+      ANO_CLIENTE: norm['ANO CLIENTE'] || '',
+      DATA_DO_PRIMEIRO_PEDIDO: formatBrDate(norm['DATA DO PRIMEIRO PEDIDO'] || ''),
+      DATA_DO_ULTIMO_PEDIDO: formatBrDate(norm['DATA DO ULTIMO PEDIDO'] || ''),
+      TOTAL_DE_PEDIDOS_DO_CLIENTE: norm['TOTAL DE PEDIDOS DO CLIENTE'] || '',
+      ETAPA_ATUAL_DO_CLIENTE: norm['ETAPA ATUAL DO CLIENTE'] || '',
+      ETAPA_DO_PERFIL_DE_REFERENCIA: norm['ETAPA DO PERFIL DE REFERENCIA'] || '',
+      TICKET_MEDIO_DO_CLIENTE_ULTIMO_ANO: norm['TICKET MEDIO DO CLIENTE ULTIMO ANO'] || '',
+      FAIXA_TICKET_ATUAL: norm['FAIXA TICKET ATUAL'] || '',
+      PRAZO_MEDIO_DO_PERFIL_2025_DIAS: norm['PRAZO MEDIO DO PERFIL 2025 DIAS'] || '',
+      PRAZO_MEDIO_DO_CLIENTE_DIAS: norm['PRAZO MEDIO DO CLIENTE DIAS'] || '',
+      QTD_INTERVALOS_USADOS_NO_PRAZO_CLIENTE: norm['QTD INTERVALOS USADOS NO PRAZO CLIENTE'] || '',
+      DIAS_DESDE_ULTIMO_PEDIDO: norm['DIAS DESDE ULTIMO PEDIDO'] || '',
+      FATOR_MINIMO_DO_PERFIL: norm['FATOR MINIMO DO PERFIL'] || '',
+      PRAZO_CANDIDATO_DIAS: norm['PRAZO CANDIDATO DIAS'] || '',
+      PISO_MINIMO_DO_PERFIL_DIAS: norm['PISO MINIMO DO PERFIL DIAS'] || '',
+      PRAZO_USADO_NA_PRIORIZACAO_DIAS: norm['PRAZO USADO NA PRIORIZACAO DIAS'] || '',
+      FONTE_DO_PRAZO_USADO: norm['FONTE DO PRAZO USADO'] || '',
+      CLASSIFICACAO_DE_RECORRENCIA: norm['CLASSIFICACAO DE RECORRENCIA'] || '',
+      TRAVA_DE_PERFIL_APLICADA: norm['TRAVA DE PERFIL APLICADA'] || '',
+      DIFERENCA_PCT_PRAZO_CLIENTE_X_PERFIL: norm['DIFERENCA PCT PRAZO CLIENTE X PERFIL'] || '',
+      DATA_ESPERADA_DO_PROXIMO_PEDIDO: formatBrDate(norm['DATA ESPERADA DO PROXIMO PEDIDO'] || ''),
+      PRIORIDADE: normalizePriorityLabel(norm['PRIORIDADE'] || ''),
+      ORDEM_PRIORIDADE: norm['ORDEM PRIORIDADE'] || '',
+      STATUS_DO_PRAZO: normalizePrazoStatus(norm['STATUS DO PRAZO'] || '', norm['ORDEM PRIORIDADE'] || norm['PRIORIDADE'] || '')
+    };
+  });
+  prioritySqlData = out;
+  normalizePrioritySqlDataMap();
+  mergePriorityIntoCsvData();
+  if (activeSeller) openDashboard(activeSeller);
+
+  const btn = document.getElementById('btnImportPriorizacaoSQL');
+  if (btn) {
+    btn.style.background = 'linear-gradient(135deg,#109150,#0c7a44)';
+    btn.innerHTML = `<span style="font-size:16px;">✅</span> ${Object.keys(out).length} prioridades`;
+    setTimeout(() => {
+      btn.style.background = 'linear-gradient(135deg,#f0a500,#c47d00)';
+      btn.innerHTML = `<span style="font-size:16px;">🎯</span> Priorização SQL`;
+    }, 4000);
+  }
+}
+
+function parseRecomendacoesSQL(text) {
+  const parsed = parseSupplementCsv(text);
+  if (!parsed) { alert('CSV de recomendações vazio ou inválido.'); return; }
+  const out = {};
+  parsed.rows.forEach(({ norm }) => {
+    const gcRaw = norm['GRUPO COMERCIAL'];
+    if (!gcRaw) return;
+    const codGC = normalizeGC(gcRaw);
+    if (!out[codGC]) out[codGC] = [];
+    out[codGC].push({
+      GRUPO_COMERCIAL: gcRaw,
+      COD_CLIENTE: norm['COD CLIENTE'] || '',
+      LOJA_CLIENTE: norm['LOJA CLIENTE'] || '',
+      COD_VENDEDOR: norm['COD VENDEDOR'] || '',
+      ESTADO_REFERENCIA: norm['ESTADO REFERENCIA'] || '',
+      DATA_ULTIMO_PEDIDO: formatBrDate(norm['DATA ULTIMO PEDIDO'] || ''),
+      PRIORIDADE: normalizePriorityLabel(norm['PRIORIDADE'] || ''),
+      ORDEM_PRIORIDADE: norm['ORDEM PRIORIDADE'] || '',
+      ETAPA_ATUAL_DO_CLIENTE: norm['ETAPA ATUAL DO CLIENTE'] || '',
+      FAIXA_TICKET_ATUAL: norm['FAIXA TICKET ATUAL'] || '',
+      PRAZO_USADO_NA_PRIORIZACAO_DIAS: norm['PRAZO USADO NA PRIORIZACAO DIAS'] || '',
+      STATUS_DO_PRAZO: norm['STATUS DO PRAZO'] || '',
+      TIPO_RECOMENDACAO: norm['TIPO RECOMENDACAO'] || '',
+      ORDEM_RECOMENDACAO: norm['ORDEM RECOMENDACAO'] || '',
+      GRADE: norm['GRADE'] || '',
+      DESC_PRODUTO: norm['DESC PRODUTO'] || '',
+      FORNECEDOR: norm['FORNECEDOR'] || '',
+      MARCA: norm['MARCA'] || '',
+      GENERO: norm['GENERO'] || '',
+      CATEGORIA: norm['CATEGORIA'] || '',
+      SEGMENTO: norm['SEGMENTO'] || '',
+      FAMILIA: norm['FAMILIA'] || '',
+      COR: norm['COR'] || '',
+      FOTO_URL: norm['FOTO URL'] || '',
+      QTD_GRADE: norm['QTD GRADE'] || '',
+      UNIDADES_POR_CAIXA: norm['UNIDADES POR CAIXA'] || norm['QTD GRADE'] || '',
+      PV: norm['PV'] || '',
+      PV_UNITARIO: norm['PV UNITARIO'] || '',
+      PV_CAIXA: norm['PV CAIXA'] || '',
+      QTD_STK: norm['QTD STK'] || '',
+      QTD_STK_CDP: norm['QTD STK CDP'] || '',
+      QTD_STK_CDG: norm['QTD STK CDG'] || '',
+      QTD_EMPENHO: norm['QTD EMPENHO'] || '',
+      QTD_EMP_CDP: norm['QTD EMP CDP'] || '',
+      QTD_EMP_CDG: norm['QTD EMP CDG'] || '',
+      QTD_STK_DISPONIVEL: norm['QTD STK DISPONIVEL'] || '',
+      STATUS_ESTOQUE: norm['STATUS ESTOQUE'] || '',
+      QTD_SUGERIDA: norm['QTD SUGERIDA'] || '',
+      QTD_SUGERIDA_UNIDADES: norm['QTD SUGERIDA UNIDADES'] || '',
+      QTD_SUGERIDA_CAIXAS: norm['QTD SUGERIDA CAIXAS'] || '',
+      QTD_SUGERIDA_UNIDADES_AJUSTADA: norm['QTD SUGERIDA UNIDADES AJUSTADA'] || '',
+      INVESTIMENTO_SUGERIDO: norm['INVESTIMENTO SUGERIDO'] || '',
+      PEDIDOS_BASE: norm['PEDIDOS BASE'] || '',
+      QTD_BASE: norm['QTD BASE'] || '',
+      FATURAMENTO_BASE: norm['FATURAMENTO BASE'] || '',
+      SCORE_RECOMENDACAO: norm['SCORE RECOMENDACAO'] || '',
+      CRITERIO_RECOMENDACAO: norm['CRITERIO RECOMENDACAO'] || ''
+    });
+  });
+  Object.keys(out).forEach(gc => { out[gc] = sortRecommendationRows(out[gc]); });
+  recommendationSqlData = out;
+  normalizeRecommendationSqlDataMap();
+  invalidateProductPhotoLookup();
+  if (activeSeller) renderTable();
+
+  const btn = document.getElementById('btnImportRecomendacoesSQL');
+  if (btn) {
+    btn.style.background = 'linear-gradient(135deg,#109150,#0c7a44)';
+    const total = Object.values(out).reduce((acc, arr) => acc + arr.length, 0);
+    btn.innerHTML = `<span style="font-size:16px;">✅</span> ${total} recomendações`;
+    setTimeout(() => {
+      btn.style.background = 'linear-gradient(135deg,#0c7a42,#095d31)';
+      btn.innerHTML = `<span style="font-size:16px;">⭐</span> Recomendações SQL`;
+    }, 4000);
+  }
+}
+
+function buildPrioritySqlHtml(info) {
+  return '';
+}
+
+function buildSqlRecommendationsHtml(rows) {
+  if (!rows || rows.length === 0) return '';
+  const grouped = {};
+  rows.forEach(r => {
+    const key = (r.TIPO_RECOMENDACAO || 'OUTROS').toUpperCase();
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(r);
+  });
+  const labels = { REPOSICAO: 'Reposição', BEST_SELLER: 'Best Seller', OUTROS: 'Outros' };
+  const sections = Object.entries(grouped).map(([tipo, itens]) => {
+    const cards = itens.slice(0, 8).map(item => {
+      const foto = item.FOTO_URL
+        ? `<img src="${esc(item.FOTO_URL)}" alt="${esc(item.DESC_PRODUTO || item.GRADE)}" style="width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid #e1e7f5;background:#fff;">`
+        : `<div style="width:72px;height:72px;border-radius:10px;border:1px solid #e1e7f5;background:#f4f6fb;display:flex;align-items:center;justify-content:center;font-size:24px;">📦</div>`;
+      const embalagem = formatRecommendationPackaging(item);
+      return `
+        <div style="display:grid;grid-template-columns:72px 1fr;gap:12px;padding:12px;border:1px solid #e7ecf6;border-radius:12px;background:#fff;">
+          ${foto}
+          <div>
+            <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+              <div style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:#1f2a44;">${esc(item.DESC_PRODUTO || item.GRADE || '-')}</div>
+              <div style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:800;color:#2251c5;white-space:nowrap;">Sugestão: ${esc(formatRecommendationQty(item))}</div>
+            </div>
+            <div style="font-size:11px;color:#6a7591;margin-top:4px;">${esc([item.MARCA, item.CATEGORIA, item.GENERO, item.COR].filter(Boolean).join(' • ') || '-')}</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+              <span style="background:#eef2ff;color:#3b5bcc;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:700;">Grade: ${esc(item.GRADE || '-')}</span>
+              <span style="background:#edf7f0;color:#0c7a42;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:700;">Estoque: ${formatRecommendationStock(item)}</span>
+              ${embalagem ? `<span style="background:#eef9ff;color:#0a6ea8;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:700;">Caixa: ${esc(embalagem)}</span>` : ''}
+              <span style="background:#fff3df;color:#c47d00;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:700;">${esc(item.STATUS_ESTOQUE || 'SEM STATUS')}</span>
+              <span style="background:#f4f6fb;color:#60708f;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:700;">${esc(formatRecommendationPrice(item))}</span>
+            </div>
+            <div style="font-size:11px;color:#41506f;margin-top:8px;line-height:1.45;"><strong>Critério:</strong> ${esc(item.CRITERIO_RECOMENDACAO || '-')}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="margin-bottom:16px;">
+        <div style="font-weight:800;font-size:12px;letter-spacing:1px;color:#0c7a42;text-transform:uppercase;margin-bottom:8px;">⭐ ${labels[tipo] || tipo}</div>
+        <div style="display:grid;gap:10px;">${cards}</div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div style="margin-bottom:16px;">
+      <div style="font-weight:800;font-size:12px;letter-spacing:1px;color:#0c7a42;text-transform:uppercase;margin-bottom:6px;">🛍 Recomendações de Produto</div>
+      <div style="font-size:11px;color:#888;margin-bottom:8px;">Base carregada do resultset de recomendações do SQL.</div>
+      ${sections}
+    </div>`;
 }
 
 // ─────────────────────────────────────────────
@@ -1749,7 +2828,10 @@ function openDashboard(s) {
   const lblU = document.getElementById('lastUpdateLabel');
   if (lblU) {
     const tsU = localStorage.getItem('pmg_lastUpdate_' + s.name);
-    lblU.textContent = tsU ? `🔄 Atualizado: ${tsU}` : '';
+    const autoTs = window.__PMG_AUTOMATION_INFO__ && window.__PMG_AUTOMATION_INFO__.generated_at
+      ? String(window.__PMG_AUTOMATION_INFO__.generated_at)
+      : '';
+    lblU.textContent = tsU ? `🔄 Atualizado: ${tsU}` : (autoTs ? `🗂 Base automática: ${autoTs}` : '');
   }
   window.scrollTo(0, 0);
   setTimeout(_updateTheadTop, 50);
@@ -1800,6 +2882,7 @@ function renderStats(rows) {
     const dias = (r['DIAS_CONTATO']||'').split(/[;,-]/).map(d => parseInt(d.trim(),10));
     return dias.includes(hoje);
   }).length;
+  const prioridadesSql = rows.filter(r => hasPriorityContato(r)).length;
 
   document.getElementById('dashClientCount').textContent = carteiraSim + ' cliente(s)';
 
@@ -1818,6 +2901,7 @@ function renderStats(rows) {
       <div class="stat-label">Positivação</div>
     </div></div>
     <div class="stat-card"><div class="stat-icon orange">📞</div><div class="stat-info"><div class="stat-value">${contatosHoje}</div><div class="stat-label">Contatos do Dia</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange">🎯</div><div class="stat-info"><div class="stat-value">${prioridadesSql}</div><div class="stat-label">Clientes Priorizados</div></div></div>
     <div class="stat-card"><div class="stat-icon orange">📊</div><div class="stat-info"><div class="stat-value">${mediaContatos}</div><div class="stat-label">Média Contatos/Dia</div></div></div>
     <div class="stat-card"><div class="stat-icon red">❌</div><div class="stat-info"><div class="stat-value">${naoVenda}</div><div class="stat-label">Não Venda</div></div></div>
     ${(function(){
@@ -1858,6 +2942,7 @@ function _updateTheadTop() {
 
 function renderTable() {
   const area = document.getElementById('tableArea');
+  if (Object.keys(prioritySqlData).length > 0) mergePriorityIntoCsvData();
   if (!area) return;
 
   // Ajusta sticky do thead para ficar abaixo do header fixo
@@ -1879,8 +2964,11 @@ function renderTable() {
   chips += `<span class="filter-chip ${isActive('__NAO_VENDA__')?'active':''}" data-cluster="__NAO_VENDA__" style="border-color:#e84040;color:${isActive('__NAO_VENDA__')?'#fff':'#e84040'};">Venda = Não</span>`;
   chips += `<span class="filter-chip ${isActive('__NAO_VENDA_SIM__')?'active':''}" data-cluster="__NAO_VENDA_SIM__" style="border-color:#d42b2b;color:${isActive('__NAO_VENDA_SIM__')?'#fff':'#d42b2b'};">Não Venda = SIM</span>`;
   chips += `<span class="filter-chip ${isActive('__EM_CONTATO__')?'active':''}" data-cluster="__EM_CONTATO__" style="border-color:#0f9d58;color:${isActive('__EM_CONTATO__')?'#fff':'#0f9d58'};">Em Contato = Hoje</span>`;
-  if (Object.keys(ultComprasData).length > 0) {
-    chips += `<span class="filter-chip ${isActive('__PRIORIDADE__')?'active':''}" data-cluster="__PRIORIDADE__" style="border-color:#8a94b0;color:${isActive('__PRIORIDADE__')?'#fff':'#8a94b0'};${isActive('__PRIORIDADE__')?'background:#8a94b0;':''}">🔔 Prioridade Contato</span>`;
+  if (Object.keys(prioritySqlData).length > 0) {
+    chips += `<span class="filter-chip ${isActive('__P1__')?'active':''}" data-cluster="__P1__" style="border-color:#0c7a42;color:${isActive('__P1__')?'#fff':'#0c7a42'};${isActive('__P1__')?'background:#0c7a42;':''}">P1</span>`;
+    chips += `<span class="filter-chip ${isActive('__P2__')?'active':''}" data-cluster="__P2__" style="border-color:#c47d00;color:${isActive('__P2__')?'#fff':'#c47d00'};${isActive('__P2__')?'background:#c47d00;':''}">P2</span>`;
+    chips += `<span class="filter-chip ${isActive('__P3__')?'active':''}" data-cluster="__P3__" style="border-color:#60708f;color:${isActive('__P3__')?'#fff':'#60708f'};${isActive('__P3__')?'background:#60708f;':''}">P3</span>`;
+    chips += `<span class="filter-chip ${isActive('__P4__')?'active':''}" data-cluster="__P4__" style="border-color:#c0362c;color:${isActive('__P4__')?'#fff':'#c0362c'};${isActive('__P4__')?'background:#c0362c;':''}">P4</span>`;
   }
   chips += `</div>`;
 
@@ -2055,6 +3143,25 @@ function renderTable() {
           const n = parseInt(val) || 0;
           html += `<td style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;text-align:center;color:${n>0?'var(--green)':'var(--text-light)'};">${n > 0 ? n : '—'}</td>`;
 
+        } else if (col.key === 'PRIORIDADE_SQL') {
+          const pctx = getPriorityContext(row);
+          const prioridadeCell = pctx.label || (pctx.order ? `P${pctx.order}` : '');
+          html += `<td style="text-align:center;padding:6px 10px !important;white-space:nowrap;">${priorityBadgeHtml(prioridadeCell)}</td>`;
+
+        } else if (col.key === 'STATUS_PRAZO_SQL') {
+          const pctx = getPriorityContext(row);
+          html += `<td style="text-align:center;padding:6px 10px !important;white-space:nowrap;">${prazoBadgeHtml(pctx.status)}</td>`;
+
+        } else if (col.key === 'PRAZO_PRIORIZACAO_DIAS') {
+          const pctx = getPriorityContext(row);
+          const prazoSemDecimal = formatDaysNoDecimals(pctx.prazo);
+          const prazoTxt = prazoSemDecimal ? `${esc(prazoSemDecimal)} dias` : '—';
+          html += `<td style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;text-align:center;color:var(--text-dark);white-space:nowrap;">${prazoTxt}</td>`;
+
+        } else if (col.key === 'DATA_PROXIMO_PEDIDO_SQL') {
+          const pctx = getPriorityContext(row);
+          html += `<td style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;text-align:center;color:var(--blue-dark);white-space:nowrap;">${esc(pctx.dataProx || '-')}</td>`;
+
         } else if (col.key === 'EM CONTATO') {
           const hoje = new Date().getDate();
           const diasContato = (row['DIAS_CONTATO']||'').split(/[;,-]/).map(d => parseInt(d.trim(),10)).filter(Boolean);
@@ -2066,6 +3173,11 @@ function renderTable() {
                 onclick="onContatoBtn(this)">HOJE</button>
             </div>
           </td>`;
+
+        } else if (col.key === 'ULTIMO_CONTATO_DATA') {
+          const contatoInfo = getContatoDatesInfo(row['DIAS_CONTATO']);
+          const latestContato = contatoInfo.lastDate || '—';
+          html += `<td class="dias-contato-cell td-left" style="padding:6px 14px !important;white-space:nowrap;" title="${esc(contatoInfo.title || '')}">${esc(latestContato)}</td>`;
 
         } else if (col.key === 'DIAS_CONTATO') {
           const diasDisplay = (row['DIAS_CONTATO']||'').replace(/[;,]/g,' - ').replace(/^\s*-\s*|\s*-\s*$/g,'');
@@ -2158,13 +3270,14 @@ function renderTable() {
           } else {
             const codGCnorm = isNaN(parseFloat(String(val).replace(',','.'))) ? val : String(Math.round(parseFloat(String(val).replace(',','.'))));
             const hasCompras = ultComprasData[codGCnorm] && ultComprasData[codGCnorm].length > 0;
+            const hasSqlReco = getRecommendationRowsForGC(codGCnorm).length > 0 || getPriorityPayloadForGC(codGCnorm);
             html += `<td class="${frozenCls}" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:var(--text-dark);">
               <div style="display:flex;align-items:center;gap:6px;justify-content:center;">
                 ${esc(display)}
                 ${hasCompras ? `<button onclick="openUltCompras('${codGCnorm}','${esc(row['NOME_GC']||'')}',this)" title="Últimas compras"
                   style="background:linear-gradient(135deg,#7b2ff7,#5a0fc8);border:none;border-radius:4px;padding:3px 7px;cursor:pointer;color:#fff;font-size:13px;line-height:1;">
-                  🛒</button>
-                <button onclick="openInsight('${codGCnorm}','${esc(row['NOME_GC']||'')}',this)" title="Sugestão inteligente"
+                  🛒</button>` : ''}
+                ${(hasCompras || hasSqlReco) ? `<button onclick="openInsight('${codGCnorm}','${esc(row['NOME_GC']||'')}',this)" title="Sugestão inteligente"
                   style="background:linear-gradient(135deg,#f0a500,#c47d00);border:none;border-radius:4px;padding:3px 7px;cursor:pointer;color:#fff;font-size:13px;line-height:1;">
                   ⭐</button>` : ''}
               </div>
@@ -2220,30 +3333,27 @@ function renderTable() {
           }
           html += `<td style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;text-align:center;color:${pctDisplay!=='—'&&pctDisplay!=='0%'?'var(--blue-mid)':'var(--text-light)'};">${pctDisplay}</td>`;
 
+        } else if (col.key === 'DATA_ULTIMA_COMPRA_DISPLAY') {
+          const ultimaCompra = getLastPurchaseDateInfo(row);
+          html += `<td style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;text-align:center;color:var(--blue-dark);white-space:nowrap;">${esc(ultimaCompra.br || '—')}</td>`;
+
         } else if (col.key === 'DT_ULT_COMPRA') {
-          const gc = (() => { const g=(row['GRUPO_  COMERCIAL']||'').trim(); const n=parseFloat(g.replace(',','.')); return isNaN(n)?g:String(Math.round(n)); })();
-          const entries = ultComprasData[gc];
-          const dtStr = entries && entries.length > 0 ? entries[0].ultData : (val || '');
+          const gc = getRowCodGC(row);
+          const entries = gc ? ultComprasData[gc] : null;
+          const diff = getDaysSinceLastPurchase(row);
           let diasSemVenda = '—';
           let cor = 'var(--text-light)';
-          if (dtStr) {
-            // Suporta DD/MM/YYYY ou YYYY-MM-DD
-            let dtParts, dtObj;
-            if (dtStr.includes('/')) {
-              dtParts = dtStr.split('/');
-              dtObj = new Date(+dtParts[2], +dtParts[1]-1, +dtParts[0]);
-            } else {
-              dtObj = new Date(dtStr);
-            }
-            if (!isNaN(dtObj.getTime())) {
-              const diff = Math.floor((Date.now() - dtObj.getTime()) / 86400000);
-              diasSemVenda = diff;
-              // Cor baseada no fator dinâmico de prioridade
-              const med = entries && entries.length > 0 ? parseFloat(entries[0].tempoMedio||0) : 0;
-              const fator = med < 8 ? 2.5 : med <= 18 ? 2.0 : med <= 45 ? 1.7 : 1.3;
-              cor = diff > med * fator ? '#d42b2b' : diff > med ? '#f0a500' : 'var(--green)';
-            }
+
+          if (diff !== null) {
+            diasSemVenda = diff;
+            // Cor baseada no fator dinâmico de prioridade
+            const med = entries && entries.length > 0 ? parseFloat(entries[0].tempoMedio||0) : 0;
+            const fator = med < 8 ? 2.5 : med <= 18 ? 2.0 : med <= 45 ? 1.7 : 1.3;
+            cor = med > 0
+              ? (diff > med * fator ? '#d42b2b' : diff > med ? '#f0a500' : 'var(--green)')
+              : (diff > 90 ? '#d42b2b' : diff > 45 ? '#f0a500' : 'var(--green)');
           }
+
           html += `<td style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:${cor};white-space:nowrap;">${diasSemVenda}</td>`;
 
         } else {
@@ -2334,18 +3444,12 @@ function applyFilters() {
       return dias.includes(hoje);
     }
     if (f === '__PRIORIDADE__') {
-      const gc = (() => { const g=(row['GRUPO_  COMERCIAL']||'').trim(); const n=parseFloat(g.replace(',','.')); return isNaN(n)?g:String(Math.round(n)); })();
-      const c3 = ultComprasData[gc];
-      if (!c3 || c3.length === 0) return false;
-      const first = c3[0];
-      const qtd = parseInt(first.qtdDatas||0,10);
-      const ina = parseFloat(first.tempoInativo||0);
-      const med = parseFloat(first.tempoMedio||0);
-      if (qtd <= 4 || med <= 0 || ina >= 120) return false;
-      // Fator dinâmico: ciclo curto = alerta mais sensível
-      const fator = med < 8 ? 2.5 : med <= 18 ? 2.0 : med <= 45 ? 1.7 : 1.3;
-      return ina > med * fator;
+      return hasPriorityContato(row);
     }
+    if (f === '__P1__') return getPriorityOrderValue(row) === 1;
+    if (f === '__P2__') return getPriorityOrderValue(row) === 2;
+    if (f === '__P3__') return getPriorityOrderValue(row) === 3;
+    if (f === '__P4__') return getPriorityOrderValue(row) === 4;
     // cluster normal
     return (row['CLUSTER']||'').toUpperCase() === f.toUpperCase();
   };
@@ -2364,27 +3468,48 @@ function applyFilters() {
       let av = (a[sortCol] || '');
       let bv = (b[sortCol] || '');
 
-      // DIAS S/ VENDA (DT_ULT_COMPRA) — converte data para dias
-      if (sortCol === 'DT_ULT_COMPRA') {
-        const toDias = (row) => {
-          const gc = (() => { const g=(row['GRUPO_  COMERCIAL']||'').trim(); const n=parseFloat(g.replace(',','.')); return isNaN(n)?g:String(Math.round(n)); })();
-          const entries = ultComprasData[gc];
-          const dtStr = entries && entries.length > 0 ? entries[0].ultData : (row['DT_ULT_COMPRA'] || '');
-          if (!dtStr) return -1;
-          let dtObj;
-          if (dtStr.includes('/')) { const p=dtStr.split('/'); dtObj=new Date(+p[2],+p[1]-1,+p[0]); }
-          else { dtObj=new Date(dtStr); }
-          if (isNaN(dtObj.getTime())) return -1;
-          return Math.floor((Date.now() - dtObj.getTime()) / 86400000);
-        };
-        return (toDias(a) - toDias(b)) * sortDir;
+      // Última compra — ordena pela data real
+      if (sortCol === 'DATA_ULTIMA_COMPRA_DISPLAY') {
+        const ta = getLastPurchaseDateInfo(a).date ? getLastPurchaseDateInfo(a).date.getTime() : 0;
+        const tb = getLastPurchaseDateInfo(b).date ? getLastPurchaseDateInfo(b).date.getTime() : 0;
+        return (ta - tb) * sortDir;
       }
 
-      // Colunas com dias separados por ; ou , — ordena pela quantidade
+      // DIAS S/ VENDA (DT_ULT_COMPRA) — converte data para dias
+      if (sortCol === 'DT_ULT_COMPRA') {
+        const da = getDaysSinceLastPurchase(a);
+        const db = getDaysSinceLastPurchase(b);
+        return ((da === null ? -1 : da) - (db === null ? -1 : db)) * sortDir;
+      }
+
+      // DIAS_VENDA e DIAS_CONTATO ordenam pela quantidade de marcações
       if (sortCol === 'DIAS_VENDA' || sortCol === 'DIAS_CONTATO') {
         const an = av ? av.split(/[;,-]/).filter(Boolean).length : 0;
         const bn = bv ? bv.split(/[;,-]/).filter(Boolean).length : 0;
         return (an - bn) * sortDir;
+      }
+
+      if (sortCol === 'ULTIMO_CONTATO_DATA') {
+        return (getLastContatoTimestamp(a) - getLastContatoTimestamp(b)) * sortDir;
+      }
+
+      if (sortCol === 'PRIORIDADE_SQL') {
+        const orderMap = { 1: 0, 2: 1, 3: 2, 4: 3, 0: 9 };
+        const an = orderMap[getPriorityOrderValue(a)] ?? 9;
+        const bn = orderMap[getPriorityOrderValue(b)] ?? 9;
+        if (an !== bn) return (an - bn) * sortDir;
+      }
+
+      if (sortCol === 'DATA_PROXIMO_PEDIDO_SQL') {
+        const toTs = v => {
+          const s = String(v || '').trim();
+          if (!s) return 0;
+          const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+          if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
+          const d = new Date(s);
+          return isNaN(d.getTime()) ? 0 : d.getTime();
+        };
+        return (toTs(av) - toTs(bv)) * sortDir;
       }
 
       const an = parseFloat(String(av).replace(',','.'));
@@ -2697,6 +3822,8 @@ function _buildPainel(sourceHTML) {
     const dateLabel = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
     const dateFmt   = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}`;
     const dataSnapshot = JSON.stringify(csvData).replace(/<\/script>/gi, '<\\/script>');
+    const senhasSnapshot = JSON.stringify(Object.fromEntries(allSellers.map(s => [s.name, s.password]))).replace(/<\/script>/gi, '<\\/script>');
+    const automationInfoSnapshot = JSON.stringify(window.__PMG_AUTOMATION_INFO__ || {}).replace(/<\/script>/gi, '<\\/script>');
 
     // 1. Muda título
     sourceHTML = sourceHTML.replace('<h1>Menu Inicial</h1>', '<h1>Painel de Vendedores</h1>');
@@ -2722,9 +3849,13 @@ function _buildPainel(sourceHTML) {
       + ';window.__PMG_META__=' + JSON.stringify(sellerMeta)
       + ';window.__PMG_METAP__=' + JSON.stringify(sellerMetaPosit)
       + ';window.__PMG_3ULT__=' + JSON.stringify(ultComprasData)
+      + ';window.__PMG_PRIORITY__=' + JSON.stringify(prioritySqlData)
+      + ';window.__PMG_RECO__=' + JSON.stringify(recommendationSqlData)
       + ';window.__PMG_CADASTRO__=' + JSON.stringify(cadastroData)
       + ';window.__PMG_FERIAS__=' + JSON.stringify(senhasFeriasSerial)
-      + ';window.__PMG_DATE__=\'' + dateFmt + '\';window.__PMG_IS_PAINEL__=true;})()</scr' + 'ipt>';
+      + ';window.__PMG_PASSWORDS__=' + senhasSnapshot
+      + ';window.__PMG_AUTOMATION_INFO__=' + automationInfoSnapshot
+      + ';window.__PMG_DATE__=\'' + dateFmt + '\';window.__PMG_FINAL_PANEL__=true;window.__PMG_IS_PAINEL__=true;})()</scr' + 'ipt>';
     sourceHTML = sourceHTML.replace(SENTINEL, dataScript);
 
     const blob = new Blob([sourceHTML], { type: 'text/html;charset=utf-8;' });
@@ -3612,10 +4743,33 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
   searchTerm=''; activeFilters=new Set(['TODOS']); currentPage=1;
 });
 
+function _applyPreloadedWhenReady() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyPreloadedAutomationData, { once: true });
+  } else {
+    applyPreloadedAutomationData();
+  }
+}
+
+document.addEventListener('pmg:data-local-loaded', _applyPreloadedWhenReady);
+_applyPreloadedWhenReady();
+
 // ── ATIVAÇÃO MODO PAINEL (deve ser o último código a rodar) ──
+function __pmgTryActivatePainelMode(){
+  // Se este arquivo é o HTML-mãe/admin aberto na pasta app,
+  // não entra direto no painel só porque o Python gerou __PMG_IS_PAINEL__.
+  // Apenas o arquivo final gerado pelo botão Salvar Painel deve ativar automaticamente.
+  if (window.__PMG_ADMIN_EDITOR__ === true && window.__PMG_FINAL_PANEL__ !== true) return;
+  if (!window.__PMG_IS_PAINEL__) return;
+  if (window.__PMG_PAINEL_ACTIVATED__) return;
+  window.__PMG_PAINEL_ACTIVATED__ = true;
+  setTimeout(activatePainelMode, 0);
+}
+document.addEventListener('pmg:data-local-loaded', function(){ __pmgTryActivatePainelMode(); });
+__pmgTryActivatePainelMode();
 if (window.__PMG_IS_PAINEL__) {
   // Usa setTimeout(0) para garantir que o DOM está 100% disponível
-  setTimeout(activatePainelMode, 0);
+  __pmgTryActivatePainelMode();
 
   // Lembrete de salvar às 12:00 e 17:00
   (function() {
